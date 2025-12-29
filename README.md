@@ -1,132 +1,95 @@
-Smart Healthcare Appointment App
+=======
+# Smart Healthcare Appointment App
 
-A full-stack web application to manage doctor appointments with separate roles for patients, doctors, and admins.
+A full-stack MERN application for booking and managing doctor appointments with role-based access.
 
-Built to practice real-world MERN stack development concepts like authentication, role-based access, and REST APIs.
+This project simulates a real-world healthcare appointment system where patients book appointments, doctors manage schedules, and admins control the system.
 
+---
 
-What this project does
+## Tech Stack
 
-Users can register and log in
+**Frontend**
+- React
+- React Router
+- Tailwind CSS
+- Axios
 
-Patients can book appointments with doctors
+**Backend**
+- Node.js
+- Express
+- MongoDB
+- JWT Authentication
 
-Doctors can manage their availability and appointments
+---
 
-Admin can manage users, doctors, and view system data
+## User Roles
 
-Appointments follow a proper status flow (pending → approved → completed)
+### Patient
+- Register and login
+- View doctors
+- Book appointments
+- View appointment history
 
+### Doctor
+- Manage profile and availability
+- Approve or reject appointments
+- Complete appointments
 
-Tech Stack
+### Admin
+- Manage users
+- Create and approve doctors
+- View system statistics
 
-Frontend
+---
 
-React
+## Project Structure
 
-React Router
+backend/
+├── controllers
+├── models
+├── routes
+├── middleware
+└── server.js
 
-Tailwind CSS
+frontend/
+├── src/
+│ ├── pages
+│ ├── components
+│ ├── context
+│ └── services
+└── App.js
 
-Axios
+yaml
+Copy code
 
+---
 
-Backend
+## Running the Project
 
-Node.js
-
-Express.js
-
-MongoDB
-
-JWT Authentication
-
-bcrypt for password hashing
-
-
-User Roles & Features
-Patient
-
-Register & login
-
-View doctors
-
-Book appointments
-
-View appointment history
-
-Cancel pending appointments
-
-Doctor
-
-Login
-
-Edit profile & availability
-
-View appointment requests
-
-Approve / reject appointments
-
-Mark appointments as completed
-
-Admin
-
-View dashboard stats
-
-Manage users
-
-Create & approve doctor profiles
-
-View all appointments
-
-Project Structure
-smart-healthcare-appointment-system/
-├── backend/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── middleware/
-│   └── server.js
-│
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   ├── context/
-│   │   └── services/
-│   └── App.js
-│
-└── README.md
-
-How to run locally
-Backend
+### Backend
+```bash
 cd backend
 npm install
 node server.js
-
 Frontend
+bash
+Copy code
 cd frontend
 npm install
 npm start
+Learning Outcome
+MERN stack architecture
 
-Database Models
-
-User (patient / doctor / admin)
-
-Doctor (profile, specialization, availability)
-
-Appointment (date, time slot, status)
-
-Why this project
-
-This project helped me understand:
-
-How frontend and backend communicate
-
-JWT authentication and protected routes
+JWT authentication
 
 Role-based access control
 
-Designing real-world REST APIs
+REST API design
 
-Managing state and forms in React
+React state management
+
+yaml
+Copy code
+
+>>>>>>> fc78b57 (Update README with project overview)
