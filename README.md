@@ -72,9 +72,9 @@ Copy code
 cd backend
 npm install
 node server.js
+
 Frontend
-bash
-Copy code
+
 cd frontend
 npm install
 npm start
