@@ -1,0 +1,137 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: url('/assets/image.jpg') no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+    color: #fff;
+    overflow-y: auto;
+    padding: 0;
+    backdrop-filter: blur(15px);
+}
+
+.navbar {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 25px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #fff;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.nav-links a.active,
+.nav-links a:hover {
+    color: #4ca2cd;
+}
+
+.form-container {
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.6s ease-in-out;
+    color: #333;
+}
+
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+form input,
+form button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    font-size: 15px;
+    background: rgba(255, 255, 255, 0.7);
+    transition: 0.3s;
+}
+
+form input:focus {
+    border-color: #4ca2cd;
+    box-shadow: 0 0 8px rgba(76, 162, 205, 0.5);
+}
+
+form button {
+    background: linear-gradient(135deg, #4ca2cd, #67b26f);
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+form button:hover {
+    background: linear-gradient(135deg, #67b26f, #4ca2cd);
+    transform: scale(1.05);
+}
+
+form p {
+    text-align: center;
+    font-size: 14px;
+    color: #455a64;
+}
+
+form p a {
+    color: #4ca2cd;
+    text-decoration: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .form-container {
+        margin: 60px 20px;
+        padding: 20px;
+    }
+}
