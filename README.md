@@ -1,45 +1,47 @@
-=======
 # Smart Healthcare Appointment App
 
-A full-stack MERN application for booking and managing doctor appointments with role-based access.
+A full-stack MERN web application that allows patients to book doctor appointments, doctors to manage availability, and admins to manage the system.
 
-This project simulates a real-world healthcare appointment system where patients book appointments, doctors manage schedules, and admins control the system.
+This project was built to understand real-world backend logic, authentication, and role-based access used in production web applications.
 
 ---
 
 ## Tech Stack
 
-**Frontend**
-- React
-- React Router
-- Tailwind CSS
-- Axios
-
-**Backend**
-- Node.js
-- Express
-- MongoDB
-- JWT Authentication
+- Frontend: React, Tailwind CSS
+- Backend: Node.js, Express
+- Database: MongoDB (Mongoose)
+- Authentication: JWT
+- Security: bcrypt
 
 ---
 
-## User Roles
+## Features
+
+### Authentication & Roles
+- User registration and login
+- JWT-based authentication
+- Role-based access control (Patient, Doctor, Admin)
+- Protected routes on frontend and backend
 
 ### Patient
-- Register and login
-- View doctors
-- Book appointments
+- View list of available doctors
+- Book appointments based on doctor availability
+- Select date and time slots
 - View appointment history
+- Cancel pending appointments
 
 ### Doctor
-- Manage profile and availability
-- Approve or reject appointments
-- Complete appointments
+- Manage profile details
+- Set availability using day and time slots
+- View appointment requests
+- Approve, reject, or complete appointments
 
 ### Admin
-- Manage users
-- Create and approve doctors
 - View system statistics
+- Manage users (activate/deactivate/delete)
+- Create and manage doctor profiles
+- View all appointments in the system
 
 ---
 
@@ -53,43 +55,46 @@ backend/
 └── server.js
 
 frontend/
-├── src/
-│ ├── pages
-│ ├── components
-│ ├── context
-│ └── services
+├── components
+├── pages
+├── context
+├── services
 └── App.js
-
-yaml
-Copy code
 
 ---
 
-## Running the Project
+## Why this project
+
+This project was created to practice:
+- Full-stack MERN development
+- REST API design
+- Authentication and authorization
+- Database relationships
+- Realistic appointment-booking workflows
+
+---
+
+## Running the project locally
 
 ### Backend
-```bash
+
 cd backend
+
 npm install
+
 node server.js
 
-Frontend
+### Frontend
 
 cd frontend
+
 npm install
+
 npm start
-Learning Outcome
-MERN stack architecture
 
-JWT authentication
+---
 
-Role-based access control
+## Current Status
 
-REST API design
-
-React state management
-
-yaml
-Copy code
-
->>>>>>> fc78b57 (Update README with project overview)
+Core functionality is complete.  
+Future improvements may include payments, notifications, and deployment.
