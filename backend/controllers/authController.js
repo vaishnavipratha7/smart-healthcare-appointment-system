@@ -1,12 +1,52 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
+const { sendWelcomeEmail } = require('../services/emailService');
 
-// Generate JWT Token
-const generateToken = (id) => {
+const defaultAvailableSlots = [
+  {
+    day: 'Monday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Tuesday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Wednesday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Thursday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Friday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+];
+
+const generateAccessToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: '15m',
   });
+};
+
+const generateRefreshToken = (id) => {
+  const refreshSecret = process.env.JWT_REFRESH_SECRET || `${process.env.JWT_SECRET}_refresh`;
+  return jwt.sign({ id }, refreshSecret, {
+    expiresIn: '7d',
+  });
+};
+
+const sendRefreshTokenCookie = (res, token) => {
+  const cookieOptions = {
+    httpOnly: true,
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  };
+  res.cookie('refreshToken', token, cookieOptions);
 };
 
 // @desc    Register a new user
@@ -14,7 +54,8 @@ const generateToken = (id) => {
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { name, email, phone, password } = req.body;
+    console.log("Registering user with data: " + JSON.stringify(req.body));
+    const { name, email, phone, password, role, specialization, hospital, qualification, experience, consultationFee } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -22,23 +63,62 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Always assign patient role on public registration
+    const allowedRoles = ['patient', 'doctor'];
+    const userRole = allowedRoles.includes(role) ? role : 'patient';
+
+    if (userRole === 'doctor') {
+      if (!specialization || !hospital || !qualification || experience === undefined || consultationFee === undefined) {
+        return res.status(400).json({ message: 'Please provide all required doctor profile details' });
+      }
+    }
+
     const user = await User.create({
       name,
       email,
       phone,
       password,
-      role: 'patient',
+      role: userRole,
     });
 
+    let doctorProfile = null;
+    if (userRole === 'doctor') {
+      doctorProfile = await Doctor.create({
+        userId: user._id,
+        specialization,
+        hospital,
+        qualification,
+        experience,
+        consultationFee,
+        status: 'approved',
+        isActive: true,
+        availableSlots: defaultAvailableSlots,
+      });
+    }
+
     if (user) {
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(user.email, {
+          name: user.name,
+          role: user.role,
+        });
+        console.log('✅ Welcome email sent');
+      } catch (emailError) {
+        console.error('⚠️  Welcome email failed:', emailError.message);
+      }
+
+      const accessToken = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
+      sendRefreshTokenCookie(res, refreshToken);
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
-        token: generateToken(user._id),
+        doctorProfile,
+        token: accessToken,
       });
     }
   } catch (error) {
@@ -77,6 +157,10 @@ const login = async (req, res) => {
       doctorProfile = await Doctor.findOne({ userId: user._id });
     }
 
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    sendRefreshTokenCookie(res, refreshToken);
+
     res.json({
       _id: user._id,
       name: user.name,
@@ -84,7 +168,7 @@ const login = async (req, res) => {
       phone: user.phone,
       role: user.role,
       doctorProfile: doctorProfile,
-      token: generateToken(user._id),
+      token: accessToken,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -156,9 +240,60 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh
+// @access  Public
+const refresh = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ success: false, message: 'Refresh token not found' });
+  }
+
+  try {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || `${process.env.JWT_SECRET}_refresh`;
+    const decoded = jwt.verify(refreshToken, refreshSecret);
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({ success: false, message: 'User account is deactivated' });
+    }
+
+    const accessToken = generateAccessToken(user._id);
+
+    res.json({
+      success: true,
+      token: accessToken,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
+  }
+};
+
+// @desc    Logout user & clear cookie
+// @route   POST /api/auth/logout
+// @access  Public
+const logout = async (req, res) => {
+  res.cookie('refreshToken', '', {
+    httpOnly: true,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+
+  res.json({ success: true, message: 'Logged out successfully' });
+};
+
 module.exports = {
   register,
   login,
   getMe,
   updateProfile,
+  refresh,
+  logout,
 };

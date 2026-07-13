@@ -1,6 +1,30 @@
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
 const Appointment = require('../models/Appointment');
+const { manualTriggers } = require('../services/scheduledJobs');
+
+const defaultAvailableSlots = [
+  {
+    day: 'Monday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Tuesday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Wednesday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Thursday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+  {
+    day: 'Friday',
+    times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'],
+  },
+];
 
 // @desc    Get all users
 // @route   GET /api/admin/users
@@ -165,6 +189,8 @@ const createDoctor = async (req, res) => {
       experience,
       consultationFee,
       status: 'approved',
+      isActive: true,
+      availableSlots: defaultAvailableSlots,
     });
 
     // 🔑 IMPORTANT: Promote user role to doctor
@@ -250,6 +276,39 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// @desc    Trigger scheduled job manually (for testing/admin use)
+// @route   POST /api/admin/jobs/trigger
+// @access  Private (Admin)
+const triggerScheduledJob = async (req, res) => {
+  try {
+    const { jobName } = req.body;
+
+    if (!jobName) {
+      return res.status(400).json({ message: 'Please provide jobName' });
+    }
+
+    const validJobs = ['sendDailyReminders', 'cleanupOldAppointments', 'autoCompletePastAppointments', 'sendWeeklySummary'];
+
+    if (!validJobs.includes(jobName)) {
+      return res.status(400).json({ 
+        message: 'Invalid job name', 
+        validJobs 
+      });
+    }
+
+    // Trigger the job
+    console.log(`🔧 Admin triggered job: ${jobName}`);
+    manualTriggers[jobName]();
+
+    res.json({ 
+      message: `Job '${jobName}' triggered successfully`,
+      note: 'Job is running in the background. Check server logs for results.'
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   toggleUserStatus,
@@ -261,4 +320,5 @@ module.exports = {
   deleteDoctor,
   getAllAppointments,
   getDashboardStats,
+  triggerScheduledJob,
 };

@@ -1,50 +1,63 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useForm from '../hooks/useForm';
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    role: 'patient',
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
+  const validate = (values) => {
+    const errors = {};
+    if (!values.name.trim()) {
+      errors.name = 'Full name is required';
+    }
+    if (!values.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/\S+@\S+\.\S+/.test(values.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    if (!values.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(values.phone)) {
+      errors.phone = 'Phone number must be exactly 10 digits';
+    }
+    if (!values.password) {
+      errors.password = 'Password is required';
+    } else if (values.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(values.password)) {
+      errors.password = 'Password must contain uppercase, lowercase, and a number';
+    }
+    if (values.password !== values.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (values.role === 'doctor') {
+      if (!values.specialization.trim()) {
+        errors.specialization = 'Specialization is required';
+      }
+      if (!values.hospital.trim()) {
+        errors.hospital = 'Hospital name is required';
+      }
+      if (!values.qualification.trim()) {
+        errors.qualification = 'Qualification is required';
+      }
+      if (values.experience === '' || isNaN(values.experience) || Number(values.experience) < 0) {
+        errors.experience = 'Experience must be a positive number';
+      }
+      if (values.consultationFee === '' || isNaN(values.consultationFee) || Number(values.consultationFee) < 0) {
+        errors.consultationFee = 'Consultation fee must be a positive number';
+      }
+    }
+    return errors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    if (!/^\d{10}$/.test(formData.phone)) {
-      setError('Please enter a valid 10-digit phone number');
-      return;
-    }
-
-    setLoading(true);
-
+  const handleRegisterSubmit = async (formValues) => {
+    setSubmitError('');
     try {
-      const { confirmPassword, ...registerData } = formData;
+      const { confirmPassword, ...registerData } = formValues;
       const userData = await register(registerData);
 
       // Redirect based on role
@@ -62,11 +75,29 @@ const Register = () => {
           navigate('/');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
+      setSubmitError(err.response?.data?.message || 'Registration failed. Please try again.');
     }
   };
+
+  const {
+    values,
+    errors,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+  } = useForm({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    role: 'patient',
+    specialization: '',
+    hospital: '',
+    qualification: '',
+    experience: '',
+    consultationFee: '',
+  }, validate, handleRegisterSubmit);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -83,13 +114,13 @@ const Register = () => {
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md" data-testid="error-message">
-            {error}
+        {submitError && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md animate-slide-in" data-testid="error-message">
+            {submitError}
           </div>
         )}
 
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
               Full Name
@@ -99,12 +130,17 @@ const Register = () => {
               name="name"
               type="text"
               required
-              value={formData.name}
+              value={values.name}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors ${
+                errors.name ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+              }`}
               placeholder="John Doe"
               data-testid="name-input"
             />
+            {errors.name && (
+              <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.name}</p>
+            )}
           </div>
 
           <div>
@@ -116,12 +152,17 @@ const Register = () => {
               name="email"
               type="email"
               required
-              value={formData.email}
+              value={values.email}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors ${
+                errors.email ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+              }`}
               placeholder="you@example.com"
               data-testid="email-input"
             />
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.email}</p>
+            )}
           </div>
 
           <div>
@@ -133,12 +174,17 @@ const Register = () => {
               name="phone"
               type="tel"
               required
-              value={formData.phone}
+              value={values.phone}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors ${
+                errors.phone ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+              }`}
               placeholder="1234567890"
               data-testid="phone-input"
             />
+            {errors.phone && (
+              <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.phone}</p>
+            )}
           </div>
 
           <div>
@@ -148,7 +194,7 @@ const Register = () => {
             <select
               id="role"
               name="role"
-              value={formData.role}
+              value={values.role}
               onChange={handleChange}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
               data-testid="role-select"
@@ -157,6 +203,125 @@ const Register = () => {
               <option value="doctor">Doctor</option>
             </select>
           </div>
+
+          {values.role === 'doctor' && (
+            <div className="space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-150 animate-slide-in">
+              <h3 className="font-semibold text-gray-800 text-sm">Doctor Professional Details</h3>
+              
+              <div>
+                <label htmlFor="specialization" className="block text-xs font-medium text-gray-700">
+                  Specialization
+                </label>
+                <input
+                  id="specialization"
+                  name="specialization"
+                  type="text"
+                  required
+                  value={values.specialization}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors ${
+                    errors.specialization ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+                  }`}
+                  placeholder="E.g. Cardiologist"
+                  data-testid="specialization-input"
+                />
+                {errors.specialization && (
+                  <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.specialization}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="hospital" className="block text-xs font-medium text-gray-700">
+                  Hospital
+                </label>
+                <input
+                  id="hospital"
+                  name="hospital"
+                  type="text"
+                  required
+                  value={values.hospital}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors ${
+                    errors.hospital ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+                  }`}
+                  placeholder="E.g. City Hospital"
+                  data-testid="hospital-input"
+                />
+                {errors.hospital && (
+                  <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.hospital}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="qualification" className="block text-xs font-medium text-gray-700">
+                  Qualification
+                </label>
+                <input
+                  id="qualification"
+                  name="qualification"
+                  type="text"
+                  required
+                  value={values.qualification}
+                  onChange={handleChange}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors ${
+                    errors.qualification ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+                  }`}
+                  placeholder="E.g. MBBS, MD"
+                  data-testid="qualification-input"
+                />
+                {errors.qualification && (
+                  <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.qualification}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="experience" className="block text-xs font-medium text-gray-700">
+                    Experience (years)
+                  </label>
+                  <input
+                    id="experience"
+                    name="experience"
+                    type="number"
+                    min="0"
+                    required
+                    value={values.experience}
+                    onChange={handleChange}
+                    className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors ${
+                      errors.experience ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+                    }`}
+                    placeholder="5"
+                    data-testid="experience-input"
+                  />
+                  {errors.experience && (
+                    <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.experience}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="consultationFee" className="block text-xs font-medium text-gray-700">
+                    Consultation Fee (₹)
+                  </label>
+                  <input
+                    id="consultationFee"
+                    name="consultationFee"
+                    type="number"
+                    min="0"
+                    required
+                    value={values.consultationFee}
+                    onChange={handleChange}
+                    className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm transition-colors ${
+                      errors.consultationFee ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+                    }`}
+                    placeholder="500"
+                    data-testid="consultation-fee-input"
+                  />
+                  {errors.consultationFee && (
+                    <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.consultationFee}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -167,12 +332,17 @@ const Register = () => {
               name="password"
               type="password"
               required
-              value={formData.password}
+              value={values.password}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors ${
+                errors.password ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+              }`}
               placeholder="••••••••"
               data-testid="password-input"
             />
+            {errors.password && (
+              <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.password}</p>
+            )}
           </div>
 
           <div>
@@ -184,21 +354,36 @@ const Register = () => {
               name="confirmPassword"
               type="password"
               required
-              value={formData.confirmPassword}
+              value={values.confirmPassword}
               onChange={handleChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 transition-colors ${
+                errors.confirmPassword ? 'border-red-300 ring-2 ring-red-100' : 'border-gray-300'
+              }`}
               placeholder="••••••••"
               data-testid="confirm-password-input"
             />
+            {errors.confirmPassword && (
+              <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.confirmPassword}</p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            disabled={isSubmitting}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             data-testid="register-submit-btn"
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Creating account...
+              </span>
+            ) : (
+              'Create account'
+            )}
           </button>
         </form>
       </div>

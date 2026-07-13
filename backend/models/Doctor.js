@@ -51,10 +51,40 @@ const doctorSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    certificates: [
+      {
+        filename: String,
+        originalName: String,
+        uploadDate: {
+          type: Date,
+          default: Date.now,
+        },
+        fileType: String,
+        fileSize: Number,
+      },
+    ],
+    profilePicture: {
+      type: String,
+    },
+    // Rating statistics (updated from reviews)
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+doctorSchema.index({ specialization: 1 });
+doctorSchema.index({ hospital: 1 });
+doctorSchema.index({ status: 1, isActive: 1 });
 
 module.exports = mongoose.model('Doctor', doctorSchema);

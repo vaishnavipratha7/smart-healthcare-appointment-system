@@ -70,6 +70,11 @@ export const doctorService = {
     return response.data;
   },
 
+  search: async (params) => {
+    const response = await api.get('/doctor/search', { params });
+    return response.data;
+  },
+
   getAppointments: async () => {
     const response = await api.get('/doctor/appointments');
     return response.data;

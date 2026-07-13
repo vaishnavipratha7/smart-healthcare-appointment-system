@@ -38,6 +38,22 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    medicalRecords: [
+      {
+        filename: String,
+        originalName: String,
+        uploadDate: {
+          type: Date,
+          default: Date.now,
+        },
+        fileType: String,
+        fileSize: Number,
+        uploadedBy: {
+          type: String,
+          enum: ['patient', 'doctor'],
+        },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -46,5 +62,7 @@ const appointmentSchema = new mongoose.Schema(
 
 // Index for checking availability
 appointmentSchema.index({ doctorId: 1, appointmentDate: 1, timeSlot: 1 });
+appointmentSchema.index({ patientId: 1, createdAt: -1 });
+appointmentSchema.index({ doctorId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

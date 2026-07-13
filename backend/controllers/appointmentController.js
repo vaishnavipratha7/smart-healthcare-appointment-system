@@ -1,6 +1,14 @@
 const Appointment = require('../models/Appointment');
 const Doctor = require('../models/Doctor');
 const User = require('../models/User');
+const {
+  sendAppointmentConfirmation,
+  sendDoctorAppointmentRequest,
+  sendAppointmentStatusUpdate,
+} = require('../services/emailService');
+const {
+  notifyNewAppointment,
+} = require('../services/socketService');
 
 // @desc    Create new appointment (Patient)
 // @route   POST /api/appointments
@@ -50,6 +58,44 @@ const createAppointment = async (req, res) => {
         },
       });
 
+    // Send email notifications
+    try {
+      // Get patient and doctor info
+      const patient = await User.findById(req.user._id);
+      const doctorUser = await User.findById(doctor.userId);
+
+      // Format date for email
+      const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Send notification to doctor
+      await sendDoctorAppointmentRequest(doctorUser.email, {
+        doctorName: doctorUser.name,
+        patientName: patient.name,
+        date: formattedDate,
+        time: timeSlot,
+        reason,
+      });
+
+      // Send real-time notification to doctor
+      notifyNewAppointment(doctorUser._id.toString(), {
+        appointmentId: appointment._id,
+        patientName: patient.name,
+        date: formattedDate,
+        timeSlot,
+        reason,
+      });
+
+      console.log('✅ Email notifications sent successfully');
+    } catch (emailError) {
+      console.error('⚠️  Email notification failed:', emailError.message);
+      // Don't fail the request if email fails
+    }
+
     res.status(201).json(populatedAppointment);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -61,12 +107,50 @@ const createAppointment = async (req, res) => {
 // @access  Private (Patient)
 const getMyAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find({ patientId: req.user._id })
+    const { status, page, limit } = req.query;
+    const query = { patientId: req.user._id };
+
+    if (status) {
+      query.status = status;
+    }
+
+    if (page || limit) {
+      const pageNum = parseInt(page) || 1;
+      const limitNum = parseInt(limit) || 10;
+      const skip = (pageNum - 1) * limitNum;
+
+      const appointments = await Appointment.find(query)
+        .populate({
+          path: 'doctorId',
+          populate: {
+            path: 'userId',
+            select: 'name email phone',
+          },
+        })
+        .sort({ appointmentDate: -1 })
+        .skip(skip)
+        .limit(limitNum);
+
+      const total = await Appointment.countDocuments(query);
+
+      return res.json({
+        success: true,
+        appointments,
+        pagination: {
+          total,
+          page: pageNum,
+          pages: Math.ceil(total / limitNum),
+          limit: limitNum,
+        },
+      });
+    }
+
+    const appointments = await Appointment.find(query)
       .populate({
         path: 'doctorId',
         populate: {
           path: 'userId',
-          select: 'name email',
+          select: 'name email phone',
         },
       })
       .sort({ appointmentDate: -1 });
@@ -109,6 +193,29 @@ const cancelAppointment = async (req, res) => {
           select: 'name email',
         },
       });
+
+    // Send cancellation email
+    try {
+      const patient = populatedAppointment.patientId;
+      const doctorUser = await User.findById(populatedAppointment.doctorId.userId);
+
+      const formattedDate = new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      await sendAppointmentStatusUpdate(patient.email, {
+        patientName: patient.name,
+        doctorName: doctorUser.name,
+        status: 'cancelled',
+        date: formattedDate,
+        time: appointment.timeSlot,
+      });
+    } catch (emailError) {
+      console.error('⚠️  Email notification failed:', emailError.message);
+    }
 
     res.json(populatedAppointment);
   } catch (error) {

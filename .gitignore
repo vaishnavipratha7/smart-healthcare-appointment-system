@@ -17,3 +17,11 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Uploaded files (keep directory structure, ignore files)
+backend/uploads/certificates/*
+backend/uploads/medical-records/*
+backend/uploads/profile-pictures/*
+!backend/uploads/certificates/.gitkeep
+!backend/uploads/medical-records/.gitkeep
+!backend/uploads/profile-pictures/.gitkeep

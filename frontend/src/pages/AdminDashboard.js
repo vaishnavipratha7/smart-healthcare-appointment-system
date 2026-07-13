@@ -122,7 +122,11 @@ const AdminDashboard = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-const doctorUsers = users.filter((u) => u.role === 'patient');
+const doctorUsers = users.filter(
+    (u) =>
+      u.role !== 'admin' &&
+      !doctors.some((doc) => doc.userId?._id?.toString() === u._id?.toString())
+  );
 
   if (loading) return <LoadingSpinner />;
 
