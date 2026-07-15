@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import socketService from '../services/socketService';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -10,26 +11,30 @@ const NotificationBell = () => {
   const [isConnected, setIsConnected] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const getDashboardLink = () => {
+    if (!user) return '/';
+    switch (user.role) {
+      case 'patient': return '/patient/dashboard';
+      case 'doctor':  return '/doctor/dashboard';
+      case 'admin':   return '/admin/dashboard';
+      default:        return '/';
+    }
+  };
 
   useEffect(() => {
-    // Listen for new notifications
     const unsubscribe = socketService.on('notification', (notification) => {
-      setNotifications((prev) => [notification, ...prev]);
+      setNotifications((prev) => [{ ...notification, read: false }, ...prev]);
       setUnreadCount((prev) => prev + 1);
-
-      // Play notification sound
       playNotificationSound();
-
-      // Show browser notification if permission granted
       showBrowserNotification(notification);
     });
 
-    // Check connection status
     const checkConnection = setInterval(() => {
       setIsConnected(socketService.isConnected());
     }, 3000);
 
-    // Initial connection check
     setIsConnected(socketService.isConnected());
 
     return () => {
@@ -38,77 +43,70 @@ const NotificationBell = () => {
     };
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
   const playNotificationSound = () => {
     try {
       const audio = new Audio('/notification-sound.mp3');
       audio.volume = 0.5;
-      audio.play().catch((err) => console.log('Audio play failed:', err));
-    } catch (error) {
-      console.log('Notification sound not available');
+      audio.play().catch(() => {});
+    } catch {
+      // sound file optional — fail silently
     }
   };
 
   const showBrowserNotification = (notification) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       new Notification(notification.title, {
         body: notification.message,
         icon: '/logo192.png',
-        badge: '/logo192.png',
         tag: notification.type,
       });
     }
   };
 
   const requestNotificationPermission = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       await Notification.requestPermission();
     }
   };
 
+  const browserNotificationsSupported = typeof Notification !== 'undefined';
+  const browserNotificationPermission = browserNotificationsSupported
+    ? Notification.permission
+    : 'denied';
+
   const handleNotificationClick = (notification) => {
+    markAsRead(notification);
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
-      setIsOpen(false);
     }
-    markAsRead(notification);
+    setIsOpen(false);
   };
 
   const markAsRead = (notification) => {
     socketService.markNotificationRead(notification.id || notification._id);
     setNotifications((prev) =>
-      prev.map((n) =>
-        n === notification ? { ...n, read: true } : n
-      )
+      prev.map((n) => (n === notification ? { ...n, read: true } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = () => {
-    notifications.forEach((notification) => {
-      if (!notification.read) {
-        socketService.markNotificationRead(notification.id || notification._id);
-      }
+    notifications.forEach((n) => {
+      if (!n.read) socketService.markNotificationRead(n.id || n._id);
     });
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
   };
 
@@ -134,25 +132,20 @@ const NotificationBell = () => {
   const formatTime = (timestamp) => {
     try {
       return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch (error) {
+    } catch {
       return 'recently';
     }
   };
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Notification Bell Button */}
+      {/* Bell button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg transition-colors"
         aria-label="Notifications"
       >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -161,14 +154,14 @@ const NotificationBell = () => {
           />
         </svg>
 
-        {/* Unread Badge */}
+        {/* Unread badge */}
         {unreadCount > 0 && (
           <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
 
-        {/* Connection Status Indicator */}
+        {/* Connection dot */}
         <span
           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
             isConnected ? 'bg-green-500' : 'bg-gray-400'
@@ -177,19 +170,15 @@ const NotificationBell = () => {
         />
       </button>
 
-      {/* Notification Dropdown */}
+      {/* Dropdown */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] flex flex-col">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-t-lg">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Notifications
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                {unreadCount > 0
-                  ? `${unreadCount} unread ${unreadCount === 1 ? 'notification' : 'notifications'}`
-                  : 'All caught up!'}
+                {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -197,7 +186,6 @@ const NotificationBell = () => {
                 <button
                   onClick={markAllAsRead}
                   className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                  title="Mark all as read"
                 >
                   Mark all read
                 </button>
@@ -206,7 +194,6 @@ const NotificationBell = () => {
                 <button
                   onClick={clearAll}
                   className="text-xs text-red-600 hover:text-red-800 font-medium"
-                  title="Clear all"
                 >
                   Clear
                 </button>
@@ -214,7 +201,7 @@ const NotificationBell = () => {
             </div>
           </div>
 
-          {/* Notification List */}
+          {/* List */}
           <div className="overflow-y-auto flex-1">
             {notifications.length === 0 ? (
               <div className="px-4 py-12 text-center">
@@ -231,9 +218,7 @@ const NotificationBell = () => {
                     d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                   />
                 </svg>
-                <p className="mt-2 text-sm text-gray-500">
-                  No notifications yet
-                </p>
+                <p className="mt-2 text-sm text-gray-500">No notifications yet</p>
                 <p className="mt-1 text-xs text-gray-400">
                   You'll see notifications here when you receive them
                 </p>
@@ -255,12 +240,9 @@ const NotificationBell = () => {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    {/* Icon */}
                     <div className="flex-shrink-0 text-2xl">
                       {getNotificationIcon(notification.type)}
                     </div>
-
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">
                         {notification.title}
@@ -272,8 +254,6 @@ const NotificationBell = () => {
                         {formatTime(notification.timestamp)}
                       </p>
                     </div>
-
-                    {/* Unread Indicator */}
                     {!notification.read && (
                       <div className="flex-shrink-0">
                         <span className="inline-block w-2 h-2 bg-blue-600 rounded-full" />
@@ -289,30 +269,22 @@ const NotificationBell = () => {
           {notifications.length > 0 && (
             <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
               <button
-                onClick={() => {
-                  navigate('/notifications');
-                  setIsOpen(false);
-                }}
+                onClick={() => { navigate(getDashboardLink()); setIsOpen(false); }}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium w-full text-center"
               >
-                View all notifications →
+                Go to Dashboard →
               </button>
             </div>
           )}
 
-          {/* Request Browser Notification Permission */}
-          {Notification.permission === 'default' && (
+          {/* Browser notification permission prompt */}
+          {browserNotificationsSupported && browserNotificationPermission === 'default' && (
             <div className="px-4 py-3 bg-blue-50 border-t border-blue-200">
               <button
                 onClick={requestNotificationPermission}
                 className="text-xs text-blue-900 hover:text-blue-700 w-full text-left flex items-center gap-2"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

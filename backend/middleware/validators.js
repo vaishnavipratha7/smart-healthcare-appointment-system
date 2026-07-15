@@ -109,7 +109,7 @@ const validateCreateAppointment = [
   
   body('appointmentDate')
     .notEmpty().withMessage('Appointment date is required')
-    .isISO8601().withMessage('Invalid date format. Use ISO 8601 format (YYYY-MM-DD)')
+    .isISO8601({ strict: false }).withMessage('Invalid date format. Use ISO 8601 format (YYYY-MM-DD)')
     .custom((value) => {
       const appointmentDate = new Date(value);
       const today = new Date();
@@ -356,9 +356,9 @@ const validateMongoId = (paramName = 'id') => [
  */
 
 const validateAvailabilityCheck = [
-  query('date')
+  query('appointmentDate')
     .notEmpty().withMessage('Date is required')
-    .isISO8601().withMessage('Invalid date format. Use YYYY-MM-DD')
+    .isISO8601({ strict: false }).withMessage('Invalid date format. Use YYYY-MM-DD')
     .custom((value) => {
       const checkDate = new Date(value);
       const today = new Date();

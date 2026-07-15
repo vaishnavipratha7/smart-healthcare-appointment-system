@@ -23,8 +23,6 @@ router.get('/list', getAllDoctors);
 router.get('/search', validateDoctorSearch, searchDoctors);
 router.get('/specializations', getSpecializations);
 router.get('/hospitals', getHospitals);
-router.get('/:id', validateMongoId('id'), getDoctorById);
-router.get('/:id/availability', validateMongoId('id'), checkDoctorAvailability);
 
 // Protected doctor routes
 router.get('/appointments', protect, checkRole('doctor'), getDoctorAppointments);
@@ -33,5 +31,9 @@ router.put('/appointments/:id/reject', protect, checkRole('doctor'), validateMon
 router.put('/appointments/:id/complete', protect, checkRole('doctor'), validateMongoId('id'), completeAppointment);
 router.get('/profile', protect, checkRole('doctor'), getDoctorProfile);
 router.put('/profile', protect, checkRole('doctor'), validateUpdateDoctorProfile, updateDoctorProfile);
+
+// Public wildcard routes — must come AFTER all named routes
+router.get('/:id', validateMongoId('id'), getDoctorById);
+router.get('/:id/availability', validateMongoId('id'), checkDoctorAvailability);
 
 module.exports = router;

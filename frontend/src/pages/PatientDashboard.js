@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { appointmentService, doctorService } from '../services/apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
-import useDebounce from '../hooks/useDebounce';
 
 const PatientDashboard = () => {
   const { user } = useAuth();
@@ -19,24 +18,14 @@ const PatientDashboard = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  
-  // Search & Filter State
-  const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 400);
-  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    fetchDoctors(debouncedSearch);
-  }, [debouncedSearch]);
-
   const fetchData = async () => {
     try {
       const appointmentsData = await appointmentService.getMyAppointments();
-      // Handle potential pagination wrapper if backend returned paginated object
       const apps = appointmentsData.appointments || appointmentsData;
       setAppointments(apps);
       await fetchDoctors();
@@ -47,20 +36,12 @@ const PatientDashboard = () => {
     }
   };
 
-  const fetchDoctors = async (searchVal = '') => {
+  const fetchDoctors = async () => {
     try {
-      setIsSearching(true);
-      if (searchVal) {
-        const searchResult = await doctorService.search({ search: searchVal });
-        setDoctors(searchResult.doctors || []);
-      } else {
-        const doctorsData = await doctorService.getAll();
-        setDoctors(doctorsData);
-      }
+      const doctorsData = await doctorService.getAll();
+      setDoctors(doctorsData);
     } catch (err) {
       setError('Failed to load doctors');
-    } finally {
-      setIsSearching(false);
     }
   };
 
@@ -93,7 +74,6 @@ const PatientDashboard = () => {
       setShowBooking(false);
       setFormData({ doctorId: '', appointmentDate: '', timeSlot: '', reason: '' });
       setSelectedDoctor(null);
-      setSearchTerm('');
       fetchData();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to book appointment');
@@ -133,9 +113,13 @@ const PatientDashboard = () => {
   };
 
   const getTodayDate = () => {
-    const today = new Date();
-    today.setDate(today.getDate() + 1);
-    return today.toISOString().split('T')[0];
+    // Use local date arithmetic to avoid UTC offset shifting the date
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yyyy = tomorrow.getFullYear();
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const dd = String(tomorrow.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   if (loading) return <LoadingSpinner />;
@@ -178,25 +162,6 @@ const PatientDashboard = () => {
             <h2 className="text-2xl font-semibold mb-6">Book Appointment</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search Doctor by Name/Hospital</label>
-                <div className="relative mb-3">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="E.g. John Doe, City Hospital..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                  {isSearching && (
-                    <div className="absolute right-3 top-2.5">
-                      <svg className="animate-spin h-5 w-5 text-primary-500" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-
                 <label className="block text-sm font-medium text-gray-700 mb-2">Select Doctor</label>
                 <select
                   value={formData.doctorId}
@@ -256,7 +221,7 @@ const PatientDashboard = () => {
         selectedDoctor.availableSlots.map((slot) =>
           slot.times.map((time) => (
             <option key={`${slot.day}-${time}`} value={time}>
-              {slot.day} — {time}
+              {slot.day} - {time}
             </option>
           ))
         )
