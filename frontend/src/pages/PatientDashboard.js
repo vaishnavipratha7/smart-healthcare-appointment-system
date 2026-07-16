@@ -1,33 +1,130 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { appointmentService, doctorService } from '../services/apiService';
+import { appointmentService, doctorService, reviewService } from '../services/apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+// ── Inline star-rating component ─────────────────────────────────────────────
+const StarRating = ({ value, onChange, readOnly = false }) => (
+  <div className="flex items-center gap-1">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <button
+        key={star}
+        type="button"
+        onClick={() => !readOnly && onChange(star)}
+        className={`text-2xl focus:outline-none transition-colors ${
+          readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-110'
+        } ${star <= value ? 'text-yellow-400' : 'text-gray-300'}`}
+        aria-label={`${star} star`}
+      >
+        ★
+      </button>
+    ))}
+  </div>
+);
+
+// ── Inline review form for a single completed appointment ─────────────────────
+const ReviewForm = ({ appointment, onSubmitted }) => {
+  const [rating, setRating]   = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]     = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (rating === 0) { setError('Please select a rating.'); return; }
+    setError('');
+    setSubmitting(true);
+    try {
+      await reviewService.create({
+        appointmentId: appointment._id,
+        doctorId:      appointment.doctorId._id,
+        rating,
+        comment,
+      });
+      onSubmitted(appointment._id);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to submit review.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mt-4 pt-4 border-t border-gray-100 space-y-3"
+    >
+      <p className="text-sm font-medium text-gray-700">Leave a Review</p>
+
+      <StarRating value={rating} onChange={setRating} />
+
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={2}
+        maxLength={1000}
+        placeholder="Share your experience (optional)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+      />
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+      >
+        {submitting ? 'Submitting…' : 'Submit Review'}
+      </button>
+    </form>
+  );
+};
+
+// ── Main component ────────────────────────────────────────────────────────────
 const PatientDashboard = () => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showBooking, setShowBooking] = useState(false);
-  const [formData, setFormData] = useState({
+  const [doctors, setDoctors]           = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [showBooking, setShowBooking]   = useState(false);
+  const [formData, setFormData]         = useState({
     doctorId: '',
     appointmentDate: '',
     timeSlot: '',
     reason: '',
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError]               = useState('');
+  const [success, setSuccess]           = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Track which completed appointments have already been reviewed this session
+  // (keyed by appointment._id → true once submitted)
+  const [reviewed, setReviewed]         = useState({});
+
+  // Track which appointments have the review form open
+  const [reviewOpen, setReviewOpen]     = useState({});
+
+  // Patient's own submitted reviews keyed by appointmentId
+  const [myReviews, setMyReviews]       = useState({});
+
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
-      const appointmentsData = await appointmentService.getMyAppointments();
+      const [appointmentsData, reviewsData] = await Promise.all([
+        appointmentService.getMyAppointments(),
+        reviewService.getMyReviews(),
+      ]);
       const apps = appointmentsData.appointments || appointmentsData;
       setAppointments(apps);
+
+      // Build a map of appointmentId → review for quick lookup
+      const reviewMap = {};
+      (reviewsData || []).forEach((r) => {
+        reviewMap[r.appointmentId?._id || r.appointmentId] = r;
+      });
+      setMyReviews(reviewMap);
+
       await fetchDoctors();
     } catch (err) {
       setError('Failed to load dashboard data');
@@ -55,20 +152,16 @@ const PatientDashboard = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
-
     try {
-      // Check availability
       const availability = await appointmentService.checkAvailability(
         formData.doctorId,
         formData.appointmentDate,
         formData.timeSlot
       );
-
       if (!availability.available) {
         setError('This time slot is already booked. Please choose another.');
         return;
       }
-
       await appointmentService.create(formData);
       setSuccess('Appointment booked successfully!');
       setShowBooking(false);
@@ -82,30 +175,45 @@ const PatientDashboard = () => {
 
   const handleCancel = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
-
-    // Optimistically update local appointments state to 'cancelled'
-    const originalAppointments = [...appointments];
+    const original = [...appointments];
     setAppointments((prev) =>
       prev.map((apt) => (apt._id === id ? { ...apt, status: 'cancelled' } : apt))
     );
     setSuccess('');
     setError('');
-
     try {
       await appointmentService.cancel(id);
       setSuccess('Appointment cancelled successfully');
     } catch (err) {
-      // Rollback on failure
-      setAppointments(originalAppointments);
+      setAppointments(original);
       setError(err.response?.data?.message || 'Failed to cancel appointment');
     }
   };
 
+  // Called by ReviewForm once a review is successfully submitted
+  const handleReviewSubmitted = (appointmentId, reviewData) => {
+    setReviewed((prev) => ({ ...prev, [appointmentId]: true }));
+    setReviewOpen((prev) => ({ ...prev, [appointmentId]: false }));
+    setSuccess('Review submitted — thank you!');
+    // Refresh reviews so the submitted review appears immediately
+    reviewService.getMyReviews().then((data) => {
+      const reviewMap = {};
+      (data || []).forEach((r) => {
+        reviewMap[r.appointmentId?._id || r.appointmentId] = r;
+      });
+      setMyReviews(reviewMap);
+    }).catch(() => {});
+  };
+
+  const toggleReviewForm = (appointmentId) => {
+    setReviewOpen((prev) => ({ ...prev, [appointmentId]: !prev[appointmentId] }));
+  };
+
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
+      pending:   'bg-yellow-100 text-yellow-800',
+      approved:  'bg-green-100 text-green-800',
+      rejected:  'bg-red-100 text-red-800',
       completed: 'bg-blue-100 text-blue-800',
       cancelled: 'bg-gray-100 text-gray-800',
     };
@@ -113,12 +221,11 @@ const PatientDashboard = () => {
   };
 
   const getTodayDate = () => {
-    // Use local date arithmetic to avoid UTC offset shifting the date
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const yyyy = tomorrow.getFullYear();
-    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const dd = String(tomorrow.getDate()).padStart(2, '0');
+    const mm   = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const dd   = String(tomorrow.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
 
@@ -127,6 +234,7 @@ const PatientDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8" data-testid="patient-dashboard">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
@@ -161,6 +269,7 @@ const PatientDashboard = () => {
           <div className="bg-white rounded-xl shadow-md p-6 mb-8" data-testid="booking-form">
             <h2 className="text-2xl font-semibold mb-6">Book Appointment</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Select Doctor</label>
                 <select
@@ -194,7 +303,6 @@ const PatientDashboard = () => {
                   type="date"
                   value={formData.appointmentDate}
                   onChange={(e) =>
-                    // Reset timeSlot whenever date changes — old slot may not exist on new day
                     setFormData({ ...formData, appointmentDate: e.target.value, timeSlot: '' })
                   }
                   min={getTodayDate()}
@@ -205,22 +313,16 @@ const PatientDashboard = () => {
               </div>
 
               {selectedDoctor && formData.appointmentDate && (() => {
-                // Derive the weekday name from the chosen date using local time
                 const [yyyy, mm, dd] = formData.appointmentDate.split('-').map(Number);
                 const pickedDay = new Date(yyyy, mm - 1, dd).toLocaleDateString('en-US', { weekday: 'long' });
-
-                // Find the slot entry for that specific day
                 const daySlot = Array.isArray(selectedDoctor.availableSlots)
                   ? selectedDoctor.availableSlots.find((s) => s.day === pickedDay)
                   : null;
-
                 return (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time Slot{' '}
-                      <span className="text-gray-400 font-normal">({pickedDay})</span>
+                      Time Slot <span className="text-gray-400 font-normal">({pickedDay})</span>
                     </label>
-
                     {daySlot && daySlot.times.length > 0 ? (
                       <select
                         value={formData.timeSlot}
@@ -230,9 +332,7 @@ const PatientDashboard = () => {
                       >
                         <option value="">Choose a time slot</option>
                         {daySlot.times.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
+                          <option key={time} value={time}>{time}</option>
                         ))}
                       </select>
                     ) : (
@@ -243,7 +343,6 @@ const PatientDashboard = () => {
                   </div>
                 );
               })()}
-
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Visit</label>
@@ -273,29 +372,47 @@ const PatientDashboard = () => {
         <div className="bg-white rounded-xl shadow-md p-6">
           <h2 className="text-2xl font-semibold mb-6">My Appointments</h2>
           {appointments.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No appointments found. Book your first appointment!</p>
+            <p className="text-gray-500 text-center py-8">
+              No appointments found. Book your first appointment!
+            </p>
           ) : (
             <div className="space-y-4">
               {appointments.map((apt) => (
-                <div key={apt._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition" data-testid="appointment-card">
+                <div
+                  key={apt._id}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                  data-testid="appointment-card"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <h3 className="text-lg font-semibold text-gray-900">{apt.doctorId?.userId?.name || 'N/A'}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {apt.doctorId?.userId?.name || 'N/A'}
+                        </h3>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(apt.status)}`}>
                           {apt.status.toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">{apt.doctorId?.specialization} - {apt.doctorId?.hospital}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {apt.doctorId?.specialization} - {apt.doctorId?.hospital}
+                      </p>
                       <div className="mt-2 space-y-1">
                         <p className="text-sm"><strong>Date:</strong> {new Date(apt.appointmentDate).toLocaleDateString()}</p>
                         <p className="text-sm"><strong>Time:</strong> {apt.timeSlot}</p>
                         <p className="text-sm"><strong>Reason:</strong> {apt.reason}</p>
-                        {apt.notes && <p className="text-sm"><strong>Notes:</strong> {apt.notes}</p>}
-                        {apt.rejectionReason && <p className="text-sm text-red-600"><strong>Rejection Reason:</strong> {apt.rejectionReason}</p>}
+                        {apt.notes && (
+                          <p className="text-sm"><strong>Notes:</strong> {apt.notes}</p>
+                        )}
+                        {apt.rejectionReason && (
+                          <p className="text-sm text-red-600">
+                            <strong>Rejection Reason:</strong> {apt.rejectionReason}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col items-end gap-2 ml-4">
                       {apt.status === 'pending' && (
                         <button
                           onClick={() => handleCancel(apt._id)}
@@ -305,13 +422,77 @@ const PatientDashboard = () => {
                           Cancel
                         </button>
                       )}
+
+                      {/* Review button — only for completed appointments not yet reviewed */}
+                      {apt.status === 'completed' && !reviewed[apt._id] && !myReviews[apt._id] && (
+                        <button
+                          onClick={() => toggleReviewForm(apt._id)}
+                          className={`px-4 py-2 rounded-md text-sm font-medium transition border ${
+                            reviewOpen[apt._id]
+                              ? 'bg-gray-100 border-gray-300 text-gray-700'
+                              : 'bg-yellow-50 border-yellow-300 text-yellow-800 hover:bg-yellow-100'
+                          }`}
+                        >
+                          {reviewOpen[apt._id] ? 'Cancel Review' : '⭐ Leave a Review'}
+                        </button>
+                      )}
+
+                      {/* Already reviewed badge */}
+                      {apt.status === 'completed' && (reviewed[apt._id] || myReviews[apt._id]) && (
+                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                          ✓ Reviewed
+                        </span>
+                      )}
                     </div>
                   </div>
+
+                  {/* Show submitted review + doctor response */}
+                  {apt.status === 'completed' && myReviews[apt._id] && (() => {
+                    const review = myReviews[apt._id];
+                    return (
+                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                        {/* Patient's review */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700">Your review:</span>
+                          <span className="text-yellow-400">
+                            {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                          </span>
+                        </div>
+                        {review.comment && (
+                          <p className="text-sm text-gray-600 italic">"{review.comment}"</p>
+                        )}
+
+                        {/* Doctor's response */}
+                        {review.doctorResponse?.comment ? (
+                          <div className="bg-blue-50 border border-blue-100 rounded-md px-4 py-3 mt-2">
+                            <p className="text-xs font-semibold text-blue-700 mb-1">
+                              Dr. {apt.doctorId?.userId?.name} replied:
+                            </p>
+                            <p className="text-sm text-blue-800">{review.doctorResponse.comment}</p>
+                            <p className="text-xs text-blue-400 mt-1">
+                              {new Date(review.doctorResponse.respondedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">No reply from doctor yet.</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Inline review form — shown when open and not yet submitted */}
+                  {apt.status === 'completed' && reviewOpen[apt._id] && !reviewed[apt._id] && (
+                    <ReviewForm
+                      appointment={apt}
+                      onSubmitted={handleReviewSubmitted}
+                    />
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

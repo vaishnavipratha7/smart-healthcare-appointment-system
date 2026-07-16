@@ -100,7 +100,7 @@ reviewSchema.statics.calculateAverageRating = async function (doctorId) {
   const result = await this.aggregate([
     {
       $match: {
-        doctorId: mongoose.Types.ObjectId(doctorId),
+        doctorId: new mongoose.Types.ObjectId(doctorId),
         isHidden: false,
       },
     },
@@ -142,7 +142,7 @@ reviewSchema.statics.getRatingDistribution = async function (doctorId) {
   const distribution = await this.aggregate([
     {
       $match: {
-        doctorId: mongoose.Types.ObjectId(doctorId),
+        doctorId: new mongoose.Types.ObjectId(doctorId),
         isHidden: false,
       },
     },

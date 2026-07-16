@@ -157,3 +157,35 @@ export const adminService = {
     return response.data;
   },
 };
+
+export const reviewService = {
+  create: async (reviewData) => {
+    const response = await api.post('/reviews', reviewData);
+    return response.data;
+  },
+
+  getMyReviews: async () => {
+    const response = await api.get('/reviews/my-reviews');
+    return response.data;
+  },
+
+  canReview: async (appointmentId) => {
+    const response = await api.get(`/reviews/can-review/${appointmentId}`);
+    return response.data;
+  },
+
+  getDoctorReviews: async (doctorId, params = {}) => {
+    const response = await api.get(`/reviews/doctor/${doctorId}`, { params });
+    return response.data;
+  },
+
+  respond: async (reviewId, comment) => {
+    const response = await api.post(`/reviews/${reviewId}/respond`, { comment });
+    return response.data;
+  },
+
+  markHelpful: async (reviewId) => {
+    const response = await api.post(`/reviews/${reviewId}/helpful`);
+    return response.data;
+  },
+};

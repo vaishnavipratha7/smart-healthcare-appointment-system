@@ -24,24 +24,27 @@ const {
   validateMongoId,
 } = require('../middleware/validators');
 
-// Public routes
-router.get('/doctor/:doctorId', validateMongoId('doctorId'), getDoctorReviews);
-router.get('/:id', validateMongoId('id'), getReviewById);
-router.post('/:id/helpful', validateMongoId('id'), markReviewHelpful);
+// ── Named/specific paths FIRST — must be above /:id wildcard ─────────────────
 
-// Patient routes (protected)
+// Patient routes
 router.post('/', protect, checkRole('patient'), validateCreateReview, createReview);
-router.put('/:id', protect, checkRole('patient'), validateMongoId('id'), validateUpdateReview, updateReview);
-router.delete('/:id', protect, validateMongoId('id'), deleteReview); // Patient or admin
 router.get('/my-reviews', protect, checkRole('patient'), getMyReviews);
 router.get('/can-review/:appointmentId', protect, checkRole('patient'), validateMongoId('appointmentId'), canReviewAppointment);
-router.post('/:id/report', protect, validateMongoId('id'), validateReportReview, reportReview);
 
-// Doctor routes (protected)
-router.post('/:id/respond', protect, checkRole('doctor'), validateMongoId('id'), validateReviewResponse, respondToReview);
-
-// Admin routes (protected)
+// Admin routes
 router.get('/admin/reported', protect, checkRole('admin'), getReportedReviews);
+
+// Public — doctor reviews list
+router.get('/doctor/:doctorId', validateMongoId('doctorId'), getDoctorReviews);
+
+// ── Wildcard /:id routes LAST ─────────────────────────────────────────────────
+
+router.get('/:id', validateMongoId('id'), getReviewById);
+router.put('/:id', protect, checkRole('patient'), validateMongoId('id'), validateUpdateReview, updateReview);
+router.delete('/:id', protect, validateMongoId('id'), deleteReview);
+router.post('/:id/helpful', validateMongoId('id'), markReviewHelpful);
+router.post('/:id/report', protect, validateMongoId('id'), validateReportReview, reportReview);
+router.post('/:id/respond', protect, checkRole('doctor'), validateMongoId('id'), validateReviewResponse, respondToReview);
 router.put('/:id/toggle-visibility', protect, checkRole('admin'), validateMongoId('id'), toggleReviewVisibility);
 
 module.exports = router;

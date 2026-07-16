@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import {
   LineChart,
   Line,
@@ -15,142 +16,84 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const AnalyticsDashboard = ({ userRole }) => {
-  const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState('30'); // days
+const AnalyticsDashboard = () => {
+  const { user } = useAuth();
+  const userRole = user?.role;
+
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
+  const [dateRange, setDateRange] = useState('30');
+
   const [stats, setStats] = useState({
-    totalAppointments: 0,
+    totalAppointments:    0,
     confirmedAppointments: 0,
-    pendingAppointments: 0,
+    pendingAppointments:  0,
     cancelledAppointments: 0,
     completedAppointments: 0,
-    totalRevenue: 0,
-    averageRating: 0,
-    totalPatients: 0,
+    totalRevenue:         0,
+    averageRating:        0,
+    totalPatients:        0,
   });
   const [appointmentTrends, setAppointmentTrends] = useState([]);
   const [statusDistribution, setStatusDistribution] = useState([]);
-  const [revenueData, setRevenueData] = useState([]);
-  const [topDoctors, setTopDoctors] = useState([]);
-  const [peakHours, setPeakHours] = useState([]);
+  const [revenueData, setRevenueData]   = useState([]);
+  const [topDoctors, setTopDoctors]     = useState([]);
+  const [peakHours, setPeakHours]       = useState([]);
 
   useEffect(() => {
     loadAnalytics();
-  }, [dateRange]);
+  }, [dateRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAnalytics = async () => {
     setLoading(true);
+    setError('');
     try {
-      const token = localStorage.getItem('token');
-      const endDate = new Date();
-      const startDate = subDays(endDate, parseInt(dateRange));
+      const endDate   = new Date();
+      const startDate = subDays(endDate, parseInt(dateRange, 10));
 
-      // Fetch analytics data
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/analytics`,
-        {
-          params: {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-          },
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await api.get('/analytics', {
+        params: {
+          startDate: startDate.toISOString(),
+          endDate:   endDate.toISOString(),
+        },
+      });
+
+      const data = response.data;
+
+      setStats({
+        totalAppointments:    data.stats.totalAppointments    || 0,
+        confirmedAppointments: data.stats.approvedAppointments || 0,
+        pendingAppointments:  data.stats.pendingAppointments  || 0,
+        cancelledAppointments: data.stats.cancelledAppointments || 0,
+        completedAppointments: data.stats.completedAppointments || 0,
+        totalRevenue:         data.stats.totalRevenue         || 0,
+        averageRating:        data.stats.averageRating        || 0,
+        totalPatients:        data.stats.totalPatients        || 0,
+      });
+
+      // Format date labels for readability in charts
+      setAppointmentTrends(
+        (data.trends || []).map((d) => ({
+          ...d,
+          date: format(new Date(d.date), 'MMM dd'),
+        }))
       );
-
-      // Process the data (mock data for now - replace with actual API response)
-      processAnalyticsData(response.data);
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-      // Load mock data for demonstration
-      loadMockData();
+      setStatusDistribution(data.statusDistribution || []);
+      setRevenueData(
+        (data.revenueData || []).map((d) => ({
+          ...d,
+          date: format(new Date(d.date), 'MMM dd'),
+        }))
+      );
+      setPeakHours(data.peakHours || []);
+      setTopDoctors(data.topDoctors || []);
+    } catch (err) {
+      setError('Failed to load analytics data. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadMockData = () => {
-    // Mock statistics
-    setStats({
-      totalAppointments: 248,
-      confirmedAppointments: 156,
-      pendingAppointments: 42,
-      cancelledAppointments: 18,
-      completedAppointments: 190,
-      totalRevenue: 124500,
-      averageRating: 4.6,
-      totalPatients: 187,
-    });
-
-    // Mock appointment trends (last 30 days)
-    const trends = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      trends.push({
-        date: format(date, 'MMM dd'),
-        appointments: Math.floor(Math.random() * 15) + 5,
-        confirmed: Math.floor(Math.random() * 10) + 3,
-        cancelled: Math.floor(Math.random() * 3),
-      });
-    }
-    setAppointmentTrends(trends);
-
-    // Mock status distribution
-    setStatusDistribution([
-      { name: 'Confirmed', value: 156, color: '#10b981' },
-      { name: 'Pending', value: 42, color: '#f59e0b' },
-      { name: 'Completed', value: 190, color: '#3b82f6' },
-      { name: 'Cancelled', value: 18, color: '#ef4444' },
-    ]);
-
-    // Mock revenue data
-    const revenue = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = subDays(new Date(), i * 5);
-      revenue.push({
-        date: format(date, 'MMM dd'),
-        revenue: Math.floor(Math.random() * 25000) + 15000,
-      });
-    }
-    setRevenueData(revenue);
-
-    // Mock top doctors
-    setTopDoctors([
-      { name: 'Dr. Sarah Johnson', appointments: 45, rating: 4.9 },
-      { name: 'Dr. Michael Chen', appointments: 38, rating: 4.8 },
-      { name: 'Dr. Emily Brown', appointments: 35, rating: 4.7 },
-      { name: 'Dr. James Wilson', appointments: 32, rating: 4.6 },
-      { name: 'Dr. Lisa Anderson', appointments: 28, rating: 4.8 },
-    ]);
-
-    // Mock peak hours
-    setPeakHours([
-      { hour: '8 AM', count: 12 },
-      { hour: '9 AM', count: 28 },
-      { hour: '10 AM', count: 35 },
-      { hour: '11 AM', count: 32 },
-      { hour: '12 PM', count: 18 },
-      { hour: '1 PM', count: 15 },
-      { hour: '2 PM', count: 25 },
-      { hour: '3 PM', count: 30 },
-      { hour: '4 PM', count: 28 },
-      { hour: '5 PM', count: 22 },
-    ]);
-  };
-
-  const processAnalyticsData = (data) => {
-    // Process real API data here
-    if (data && data.stats) {
-      setStats(data.stats);
-      setAppointmentTrends(data.trends || []);
-      setStatusDistribution(data.statusDistribution || []);
-      setRevenueData(data.revenue || []);
-      setTopDoctors(data.topDoctors || []);
-      setPeakHours(data.peakHours || []);
-    } else {
-      loadMockData();
     }
   };
 
@@ -160,9 +103,7 @@ const AnalyticsDashboard = ({ userRole }) => {
         <div>
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
           <p className={`text-3xl font-bold ${color}`}>{value}</p>
-          {subtitle && (
-            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
         </div>
         <div className={`p-3 rounded-full ${color.replace('text-', 'bg-').replace('-600', '-100')}`}>
           {icon}
@@ -182,15 +123,12 @@ const AnalyticsDashboard = ({ userRole }) => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Analytics Dashboard
-            </h1>
-            <p className="mt-2 text-gray-600">
-              Comprehensive insights and performance metrics
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+            <p className="mt-2 text-gray-600">Comprehensive insights and performance metrics</p>
           </div>
 
           {/* Date Range Filter */}
@@ -206,7 +144,14 @@ const AnalyticsDashboard = ({ userRole }) => {
           </select>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Error banner */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+            {error}
+          </div>
+        )}
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Total Appointments"
@@ -218,7 +163,6 @@ const AnalyticsDashboard = ({ userRole }) => {
               </svg>
             }
           />
-
           <StatCard
             title="Confirmed"
             value={stats.confirmedAppointments}
@@ -229,7 +173,6 @@ const AnalyticsDashboard = ({ userRole }) => {
               </svg>
             }
           />
-
           <StatCard
             title="Total Revenue"
             value={`₹${stats.totalRevenue.toLocaleString()}`}
@@ -240,7 +183,6 @@ const AnalyticsDashboard = ({ userRole }) => {
               </svg>
             }
           />
-
           <StatCard
             title="Average Rating"
             value={stats.averageRating.toFixed(1)}
@@ -256,184 +198,153 @@ const AnalyticsDashboard = ({ userRole }) => {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
           {/* Appointment Trends */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Appointment Trends
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={appointmentTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="appointments"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  name="Total"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="confirmed"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  name="Confirmed"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="cancelled"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  name="Cancelled"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Appointment Trends</h3>
+            {appointmentTrends.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-16">No data for this period</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={appointmentTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="appointments" stroke="#3b82f6" strokeWidth={2} name="Total" />
+                  <Line type="monotone" dataKey="confirmed"    stroke="#10b981" strokeWidth={2} name="Confirmed" />
+                  <Line type="monotone" dataKey="cancelled"    stroke="#ef4444" strokeWidth={2} name="Cancelled" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Status Distribution */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Appointment Status Distribution
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {statusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Appointment Status Distribution</h3>
+            {statusDistribution.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-16">No data for this period</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    dataKey="value"
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Revenue Chart */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Revenue Trends
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="revenue" fill="#8b5cf6" name="Revenue (₹)" />
-              </BarChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Trends</h3>
+            {revenueData.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-16">No revenue data for this period</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip formatter={(v) => [`₹${v.toLocaleString()}`, 'Revenue']} />
+                  <Legend />
+                  <Bar dataKey="revenue" fill="#8b5cf6" name="Revenue (₹)" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Peak Hours */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Peak Booking Hours
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={peakHours}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="count" fill="#f59e0b" name="Appointments" />
-              </BarChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Peak Booking Hours</h3>
+            {peakHours.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-16">No data for this period</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={peakHours}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="hour" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="count" fill="#f59e0b" name="Appointments" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* Top Doctors Table */}
+        {/* Top Doctors Table — admin only */}
         {userRole === 'admin' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Top Performing Doctors
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rank
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Doctor
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Appointments
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rating
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {topDoctors.map((doctor, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span
-                            className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                              index === 0
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : index === 1
-                                ? 'bg-gray-200 text-gray-700'
-                                : index === 2
-                                ? 'bg-orange-100 text-orange-700'
-                                : 'bg-blue-100 text-blue-700'
-                            }`}
-                          >
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Doctors</h3>
+            {topDoctors.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">No data for this period</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {['Rank', 'Doctor', 'Specialization', 'Appointments', 'Rating'].map((h) => (
+                        <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {topDoctors.map((doctor, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                            index === 0 ? 'bg-yellow-100 text-yellow-800'
+                            : index === 1 ? 'bg-gray-200 text-gray-700'
+                            : index === 2 ? 'bg-orange-100 text-orange-700'
+                            : 'bg-blue-100 text-blue-700'
+                          }`}>
                             {index + 1}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {doctor.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {doctor.specialization}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {doctor.appointments}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900 mr-1">
-                            {doctor.rating}
-                          </span>
-                          <svg
-                            className="w-4 h-4 text-yellow-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-medium text-gray-900">{doctor.rating.toFixed(1)}</span>
+                            <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+        {/* Summary stat cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md p-6 text-white">
             <h4 className="text-lg font-semibold mb-2">Pending Review</h4>
             <p className="text-4xl font-bold">{stats.pendingAppointments}</p>
@@ -449,13 +360,14 @@ const AnalyticsDashboard = ({ userRole }) => {
           <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-md p-6 text-white">
             <h4 className="text-lg font-semibold mb-2">Cancellation Rate</h4>
             <p className="text-4xl font-bold">
-              {((stats.cancelledAppointments / stats.totalAppointments) * 100).toFixed(1)}%
+              {stats.totalAppointments > 0
+                ? ((stats.cancelledAppointments / stats.totalAppointments) * 100).toFixed(1)
+                : '0.0'}%
             </p>
-            <p className="text-red-100 mt-2">
-              {stats.cancelledAppointments} cancelled
-            </p>
+            <p className="text-red-100 mt-2">{stats.cancelledAppointments} cancelled</p>
           </div>
         </div>
+
       </div>
     </div>
   );

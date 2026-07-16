@@ -2,6 +2,10 @@ const Review = require('../models/Review');
 const Appointment = require('../models/Appointment');
 const Doctor = require('../models/Doctor');
 const User = require('../models/User');
+const {
+  notifyNewReview,
+  notifyReviewResponse,
+} = require('../services/socketService');
 
 /**
  * Review Controller
@@ -70,11 +74,23 @@ const createReview = async (req, res) => {
       .populate('patientId', 'name')
       .populate({
         path: 'doctorId',
-        populate: {
-          path: 'userId',
-          select: 'name',
-        },
+        populate: { path: 'userId', select: 'name' },
       });
+
+    // Notify the doctor about the new review via socket
+    try {
+      const doctorDoc = await Doctor.findById(appointment.doctorId).populate('userId', '_id');
+      if (doctorDoc) {
+        notifyNewReview(doctorDoc.userId._id.toString(), {
+          reviewId:    review._id,
+          patientName: req.user.name,
+          rating,
+          comment,
+        });
+      }
+    } catch (notifyErr) {
+      console.error('Review notification error:', notifyErr.message);
+    }
 
     res.status(201).json(populatedReview);
   } catch (error) {
@@ -352,11 +368,20 @@ const respondToReview = async (req, res) => {
       .populate('patientId', 'name')
       .populate({
         path: 'doctorId',
-        populate: {
-          path: 'userId',
-          select: 'name',
-        },
+        populate: { path: 'userId', select: 'name' },
       });
+
+    // Notify the patient about the doctor's response via socket
+    try {
+      const doctorUser = await User.findById(req.user._id).select('name');
+      notifyReviewResponse(review.patientId.toString(), {
+        reviewId:   review._id,
+        doctorName: doctorUser.name,
+        response:   comment,
+      });
+    } catch (notifyErr) {
+      console.error('Review response notification error:', notifyErr.message);
+    }
 
     res.json(populatedReview);
   } catch (error) {
