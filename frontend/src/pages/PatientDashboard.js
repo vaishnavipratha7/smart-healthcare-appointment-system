@@ -48,7 +48,7 @@ const PatientDashboard = () => {
   const handleDoctorSelect = (doctorId) => {
     const doctor = doctors.find((d) => d._id === doctorId);
     setSelectedDoctor(doctor);
-    setFormData({ ...formData, doctorId });
+    setFormData({ ...formData, doctorId, timeSlot: '' });
   };
 
   const handleSubmit = async (e) => {
@@ -193,44 +193,56 @@ const PatientDashboard = () => {
                 <input
                   type="date"
                   value={formData.appointmentDate}
-                  onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+                  onChange={(e) =>
+                    // Reset timeSlot whenever date changes — old slot may not exist on new day
+                    setFormData({ ...formData, appointmentDate: e.target.value, timeSlot: '' })
+                  }
                   min={getTodayDate()}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   data-testid="date-input"
                 />
               </div>
-{selectedDoctor && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Time Slot
-    </label>
 
-    <select
-      value={formData.timeSlot}
-      onChange={(e) =>
-        setFormData({ ...formData, timeSlot: e.target.value })
-      }
-      required
-      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-    >
-      <option value="">Choose a time slot</option>
+              {selectedDoctor && formData.appointmentDate && (() => {
+                // Derive the weekday name from the chosen date using local time
+                const [yyyy, mm, dd] = formData.appointmentDate.split('-').map(Number);
+                const pickedDay = new Date(yyyy, mm - 1, dd).toLocaleDateString('en-US', { weekday: 'long' });
 
-      {Array.isArray(selectedDoctor.availableSlots) &&
-      selectedDoctor.availableSlots.length > 0 ? (
-        selectedDoctor.availableSlots.map((slot) =>
-          slot.times.map((time) => (
-            <option key={`${slot.day}-${time}`} value={time}>
-              {slot.day} - {time}
-            </option>
-          ))
-        )
-      ) : (
-        <option value="">No slots found</option>
-      )}
-    </select>
-  </div>
-)}
+                // Find the slot entry for that specific day
+                const daySlot = Array.isArray(selectedDoctor.availableSlots)
+                  ? selectedDoctor.availableSlots.find((s) => s.day === pickedDay)
+                  : null;
+
+                return (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time Slot{' '}
+                      <span className="text-gray-400 font-normal">({pickedDay})</span>
+                    </label>
+
+                    {daySlot && daySlot.times.length > 0 ? (
+                      <select
+                        value={formData.timeSlot}
+                        onChange={(e) => setFormData({ ...formData, timeSlot: e.target.value })}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">Choose a time slot</option>
+                        {daySlot.times.map((time) => (
+                          <option key={time} value={time}>
+                            {time}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="px-4 py-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-md">
+                        Dr. {selectedDoctor.userId.name} is not available on {pickedDay}s. Please pick a different date.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
 
               <div>
