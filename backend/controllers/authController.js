@@ -54,7 +54,7 @@ const sendRefreshTokenCookie = (res, token) => {
 // @access  Public
 const register = async (req, res) => {
   try {
-    console.log("Registering user with data: " + JSON.stringify(req.body));
+    console.log("Registering user:", { email: req.body.email, role: req.body.role });
     const { name, email, phone, password, role, specialization, hospital, qualification, experience, consultationFee } = req.body;
 
     // Check if user exists
