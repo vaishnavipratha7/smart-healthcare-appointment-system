@@ -37,7 +37,7 @@ const sendEmail = async (mailOptions) => {
     // Create test account if in development without credentials
     if (!transporter) {
       const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransporter({
+      transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
         port: 587,
         secure: false,
