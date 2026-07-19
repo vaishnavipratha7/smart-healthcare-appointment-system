@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
-const { sendWelcomeEmail } = require('../services/emailService');
+const { sendWelcomeEmail, sendOTPEmail, sendPasswordResetEmail } = require('../services/emailService');
 
 const defaultAvailableSlots = [
   {
@@ -49,12 +50,15 @@ const sendRefreshTokenCookie = (res, token) => {
   res.cookie('refreshToken', token, cookieOptions);
 };
 
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 const register = async (req, res) => {
   try {
-    console.log("Registering user:", { email: req.body.email, role: req.body.role });
     const { name, email, phone, password, role, specialization, hospital, qualification, experience, consultationFee } = req.body;
 
     // Check if user exists
@@ -72,12 +76,18 @@ const register = async (req, res) => {
       }
     }
 
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     const user = await User.create({
       name,
       email,
       phone,
       password,
       role: userRole,
+      isEmailVerified: false,
+      otp,
+      otpExpires,
     });
 
     let doctorProfile = null;
@@ -89,38 +99,126 @@ const register = async (req, res) => {
         qualification,
         experience,
         consultationFee,
-        status: 'approved',
+        status: 'approved', // NOTE: Bug #1 intentionally left as-is per your request
         isActive: true,
         availableSlots: defaultAvailableSlots,
       });
     }
 
-    if (user) {
-      // Send welcome email
-      try {
-        await sendWelcomeEmail(user.email, {
-          name: user.name,
-          role: user.role,
-        });
-        console.log('✅ Welcome email sent');
-      } catch (emailError) {
-        console.error('⚠️  Welcome email failed:', emailError.message);
-      }
-
-      const accessToken = generateAccessToken(user._id);
-      const refreshToken = generateRefreshToken(user._id);
-      sendRefreshTokenCookie(res, refreshToken);
-
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        doctorProfile,
-        token: accessToken,
-      });
+    // Send OTP — account is NOT logged in until email is verified
+    try {
+      await sendOTPEmail(user.email, { name: user.name, otp });
+      console.log('✅ OTP email sent');
+    } catch (emailError) {
+      console.error('⚠️  OTP email failed:', emailError.message);
     }
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful. Please check your email for a verification code.',
+      email: user.email,
+      doctorProfile,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Verify email with OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email }).select('+otp +otpExpires');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    if (!user.otp || !user.otpExpires) {
+      return res.status(400).json({ message: 'No verification code found. Please request a new one' });
+    }
+
+    if (user.otpExpires < new Date()) {
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new one' });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid verification code' });
+    }
+
+    user.isEmailVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    let doctorProfile = null;
+    if (user.role === 'doctor') {
+      doctorProfile = await Doctor.findOne({ userId: user._id });
+    }
+
+    // Send welcome email now that the account is verified
+    try {
+      await sendWelcomeEmail(user.email, {
+        name: user.name,
+        role: user.role,
+      });
+      console.log('✅ Welcome email sent');
+    } catch (emailError) {
+      console.error('⚠️  Welcome email failed:', emailError.message);
+    }
+
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    sendRefreshTokenCookie(res, refreshToken);
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully',
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      doctorProfile,
+      token: accessToken,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+// @access  Public
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    const otp = generateOTP();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    await sendOTPEmail(user.email, { name: user.name, otp });
+
+    res.json({ success: true, message: 'A new verification code has been sent to your email' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -143,6 +241,15 @@ const login = async (req, res) => {
     // Check if user is active
     if (!user.isActive) {
       return res.status(401).json({ message: 'Your account has been deactivated' });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in',
+        requiresVerification: true,
+        email: user.email,
+      });
     }
 
     // Check password
@@ -170,6 +277,81 @@ const login = async (req, res) => {
       doctorProfile: doctorProfile,
       token: accessToken,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Request password reset
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    // Always return the same response, whether or not the user exists,
+    // so this endpoint can't be used to enumerate registered emails
+    const genericResponse = {
+      success: true,
+      message: 'If an account with that email exists, a reset link has been sent.',
+    };
+
+    if (!user) {
+      return res.json(genericResponse);
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${rawToken}`;
+
+    try {
+      await sendPasswordResetEmail(user.email, { name: user.name, resetUrl });
+    } catch (emailError) {
+      console.error('⚠️  Password reset email failed:', emailError.message);
+      // Roll back the token so a broken email doesn't leave a dangling valid reset link
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save();
+      return res.status(500).json({ message: 'Failed to send reset email. Please try again later.' });
+    }
+
+    res.json(genericResponse);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Reset password using token
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() },
+    }).select('+passwordResetToken +passwordResetExpires');
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one' });
+    }
+
+    user.password = password; // pre('save') hook re-hashes this
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successfully. Please log in with your new password' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -296,4 +478,8 @@ module.exports = {
   updateProfile,
   refresh,
   logout,
+  verifyOTP,
+  resendOTP,
+  forgotPassword,
+  resetPassword,
 };

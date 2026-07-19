@@ -43,10 +43,22 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
+  // NOTE: registration no longer logs the user in — the backend now requires
+  // OTP verification first. This call only creates the account and sends the OTP;
+  // it intentionally does NOT call setUser(). See verifyOtp() below for that.
   const register = async (userData) => {
-    const newUser = await authService.register(userData);
-    setUser(newUser);
-    return newUser;
+    const response = await authService.register(userData);
+    return response;
+  };
+
+  const verifyOtp = async ({ email, otp }) => {
+    const userData = await authService.verifyOtp({ email, otp });
+    setUser(userData);
+    return userData;
+  };
+
+  const resendOtp = async (email) => {
+    return await authService.resendOtp(email);
   };
 
   const logout = () => {
@@ -58,6 +70,8 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     register,
+    verifyOtp,
+    resendOtp,
     logout,
     loading,
     isAuthenticated: !!user,

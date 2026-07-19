@@ -58,22 +58,11 @@ const Register = () => {
     setSubmitError('');
     try {
       const { confirmPassword, ...registerData } = formValues;
-      const userData = await register(registerData);
+      const response = await register(registerData);
 
-      // Redirect based on role
-      switch (userData.role) {
-        case 'patient':
-          navigate('/patient/dashboard');
-          break;
-        case 'doctor':
-          navigate('/doctor/dashboard');
-          break;
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        default:
-          navigate('/');
-      }
+      // Registration no longer logs the user in — an OTP was sent instead.
+      // Send them to the verification screen with their email pre-filled.
+      navigate('/verify-otp', { state: { email: response.email || registerData.email } });
     } catch (err) {
       setSubmitError(err.response?.data?.message || 'Registration failed. Please try again.');
     }
@@ -112,6 +101,11 @@ const Register = () => {
               Sign in
             </Link>
           </p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md text-sm">
+          After you sign up, we'll email you a 6-digit verification code. Please use a real,
+          working email address — you won't be able to log in until it's verified.
         </div>
 
         {submitError && (

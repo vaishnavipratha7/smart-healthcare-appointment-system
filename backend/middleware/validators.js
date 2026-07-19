@@ -435,6 +435,30 @@ const validateReportReview = [
   handleValidationErrors,
 ];
 
+const validateVerifyOtp = [
+  body('email').trim().notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email'),
+  body('otp').trim().notEmpty().withMessage('OTP is required').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
+  handleValidationErrors,
+];
+
+const validateResendOtp = [
+  body('email').trim().notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email'),
+  handleValidationErrors,
+];
+
+const validateForgotPassword = [
+  body('email').trim().notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email'),
+  handleValidationErrors,
+];
+
+const validateResetPassword = [
+  body('password')
+    .notEmpty().withMessage('Password is required')
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+  handleValidationErrors,
+];
+
 module.exports = {
   // Auth validators
   validateRegister,
@@ -461,4 +485,9 @@ module.exports = {
   // Generic validators
   validateMongoId,
   handleValidationErrors,
+
+  validateVerifyOtp,
+  validateResendOtp,
+  validateForgotPassword,
+  validateResetPassword,
 };

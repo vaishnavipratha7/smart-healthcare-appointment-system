@@ -5,7 +5,8 @@ import useForm from '../hooks/useForm';
 
 const Login = () => {
   const [submitError, setSubmitError] = useState('');
-  const { login } = useAuth();
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const { login, resendOtp } = useAuth();
   const navigate = useNavigate();
 
   const validate = (values) => {
@@ -41,7 +42,23 @@ const Login = () => {
           navigate('/');
       }
     } catch (err) {
-      setSubmitError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.response?.data?.requiresVerification) {
+        setUnverifiedEmail(err.response.data.email || formValues.email);
+        setSubmitError(err.response.data.message || 'Please verify your email before logging in.');
+      } else {
+        setUnverifiedEmail('');
+        setSubmitError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
+    }
+  };
+
+  const handleQuickResend = async () => {
+    if (!unverifiedEmail) return;
+    try {
+      await resendOtp(unverifiedEmail);
+      navigate('/verify-otp', { state: { email: unverifiedEmail } });
+    } catch (err) {
+      setSubmitError(err.response?.data?.message || 'Failed to resend code. Please try again.');
     }
   };
 
@@ -70,7 +87,27 @@ const Login = () => {
 
         {submitError && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md animate-slide-in" data-testid="error-message">
-            {submitError}
+            <p>{submitError}</p>
+            {unverifiedEmail && (
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/verify-otp', { state: { email: unverifiedEmail } })}
+                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                  data-testid="go-verify-email-btn"
+                >
+                  Verify Email
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickResend}
+                  className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                  data-testid="quick-resend-otp-btn"
+                >
+                  Resend OTP
+                </button>
+              </div>
+            )}
           </div>
         )}
 

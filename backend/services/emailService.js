@@ -434,11 +434,98 @@ const sendWelcomeEmail = async (userEmail, userData) => {
   return await sendEmail(mailOptions);
 };
 
+// OTP Email Verification
+const sendOTPEmail = async (userEmail, { name, otp }) => {
+  const mailOptions = {
+    to: userEmail,
+    subject: '🔐 Verify Your Email - Healthcare System',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .otp-box { background: white; padding: 25px; border-radius: 8px; margin: 20px 0; text-align: center; border: 2px dashed #667eea; }
+            .otp-code { font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #667eea; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Verify Your Email</h1>
+            </div>
+            <div class="content">
+              <p>Dear ${name},</p>
+              <p>Thanks for registering with Healthcare Appointment System. Use the code below to verify your email address:</p>
+              <div class="otp-box">
+                <div class="otp-code">${otp}</div>
+              </div>
+              <p>This code expires in <strong>10 minutes</strong>. If you didn't create this account, you can safely ignore this email.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Your email verification code is: ${otp}\nThis code expires in 10 minutes.`,
+  };
+
+  return await sendEmail(mailOptions);
+};
+
+// Password Reset Email
+const sendPasswordResetEmail = async (userEmail, { name, resetUrl }) => {
+  const mailOptions = {
+    to: userEmail,
+    subject: '🔑 Password Reset Request - Healthcare System',
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+            .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin-top: 20px; color: #856404; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔑 Password Reset</h1>
+            </div>
+            <div class="content">
+              <p>Dear ${name},</p>
+              <p>We received a request to reset your password. Click the button below to choose a new one:</p>
+              <div style="text-align: center;">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </div>
+              <p style="margin-top: 20px;">This link expires in <strong>15 minutes</strong>.</p>
+              <div class="warning">
+                ⚠️ If you didn't request this, ignore this email — your password will remain unchanged.
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `Reset your password using this link: ${resetUrl}\nThis link expires in 15 minutes.\nIf you didn't request this, ignore this email.`,
+  };
+
+  return await sendEmail(mailOptions);
+};
+
 module.exports = {
   sendAppointmentConfirmation,
   sendAppointmentReminder,
   sendAppointmentStatusUpdate,
   sendDoctorAppointmentRequest,
   sendWelcomeEmail,
+  sendOTPEmail,             // new
+  sendPasswordResetEmail,   // new
   sendEmail, // Export for custom emails
 };
