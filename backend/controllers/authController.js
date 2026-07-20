@@ -99,7 +99,7 @@ const register = async (req, res) => {
         qualification,
         experience,
         consultationFee,
-        status: 'approved', // NOTE: Bug #1 intentionally left as-is per your request
+        status: 'pending',
         isActive: true,
         availableSlots: defaultAvailableSlots,
       });

@@ -155,6 +155,11 @@ const Login = () => {
               {errors.password && (
                 <p className="mt-1 text-xs text-red-600 font-medium animate-slide-in">{errors.password}</p>
               )}
+              <div className="text-right mt-1">
+                <Link to="/forgot-password" className="text-sm font-medium text-primary-600 hover:text-primary-500" data-testid="forgot-password-link">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
           </div>
 
