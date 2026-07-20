@@ -19,8 +19,17 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'User not found' });
       }
 
+      // Check if user account is active
       if (!req.user.isActive) {
         return res.status(401).json({ message: 'User account is deactivated' });
+      }
+
+      // Check if user has verified their email (CRITICAL SECURITY CHECK)
+      if (!req.user.isEmailVerified) {
+        return res.status(401).json({ 
+          message: 'Please verify your email before accessing this resource',
+          code: 'EMAIL_NOT_VERIFIED'
+        });
       }
 
       next();

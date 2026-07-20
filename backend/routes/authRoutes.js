@@ -13,6 +13,7 @@ const {
   resetPassword,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+const { passwordResetLimiter } = require('../middleware/rateLimiter');
 const {
   validateRegister,
   validateLogin,
@@ -26,7 +27,7 @@ router.post('/register', validateRegister, register);
 router.post('/verify-otp', validateVerifyOtp, verifyOTP);
 router.post('/resend-otp', validateResendOtp, resendOTP);
 router.post('/login', validateLogin, login);
-router.post('/forgot-password', validateForgotPassword, forgotPassword);
+router.post('/forgot-password', passwordResetLimiter, validateForgotPassword, forgotPassword);
 router.post('/reset-password/:token', validateResetPassword, resetPassword);
 router.post('/refresh', refresh);
 router.post('/logout', logout);

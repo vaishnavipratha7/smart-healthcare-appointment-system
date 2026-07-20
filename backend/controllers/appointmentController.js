@@ -13,6 +13,9 @@ const {
 // @desc    Create new appointment (Patient)
 // @route   POST /api/appointments
 // @access  Private (Patient)
+// @desc    Create a new appointment
+// @route   POST /api/appointments
+// @access  Private (Patient)
 const createAppointment = async (req, res) => {
   try {
     const { doctorId, appointmentDate, timeSlot, reason } = req.body;
@@ -27,76 +30,95 @@ const createAppointment = async (req, res) => {
       return res.status(400).json({ message: 'Doctor is not available for appointments' });
     }
 
-    // Check if slot is already booked
-    const existingAppointment = await Appointment.findOne({
-      doctorId,
-      appointmentDate: new Date(appointmentDate),
-      timeSlot,
-      status: { $in: ['pending', 'approved'] },
-    });
+    // CRITICAL FIX: Use MongoDB transaction to prevent race condition
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (existingAppointment) {
-      return res.status(400).json({ message: 'This time slot is already booked' });
-    }
-
-    // Create appointment
-    const appointment = await Appointment.create({
-      patientId: req.user._id,
-      doctorId,
-      appointmentDate,
-      timeSlot,
-      reason,
-    });
-
-    const populatedAppointment = await Appointment.findById(appointment._id)
-      .populate('patientId', 'name email phone')
-      .populate({
-        path: 'doctorId',
-        populate: {
-          path: 'userId',
-          select: 'name email',
-        },
-      });
-
-    // Send email notifications
     try {
-      // Get patient and doctor info
-      const patient = await User.findById(req.user._id);
-      const doctorUser = await User.findById(doctor.userId);
-
-      // Format date for email
-      const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-
-      // Send notification to doctor
-      await sendDoctorAppointmentRequest(doctorUser.email, {
-        doctorName: doctorUser.name,
-        patientName: patient.name,
-        date: formattedDate,
-        time: timeSlot,
-        reason,
-      });
-
-      // Send real-time notification to doctor
-      notifyNewAppointment(doctorUser._id.toString(), {
-        appointmentId: appointment._id,
-        patientName: patient.name,
-        date: formattedDate,
+      // Check if slot is already booked (within transaction)
+      const existingAppointment = await Appointment.findOne({
+        doctorId,
+        appointmentDate: new Date(appointmentDate),
         timeSlot,
-        reason,
-      });
+        status: { $in: ['pending', 'approved'] },
+      }).session(session);
 
-      console.log('✅ Email notifications sent successfully');
-    } catch (emailError) {
-      console.error('⚠️  Email notification failed:', emailError.message);
-      // Don't fail the request if email fails
+      if (existingAppointment) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: 'This time slot is already booked' });
+      }
+
+      // Create appointment within transaction
+      const appointment = await Appointment.create(
+        [{
+          patientId: req.user._id,
+          doctorId,
+          appointmentDate,
+          timeSlot,
+          reason,
+        }],
+        { session }
+      );
+
+      // Commit transaction
+      await session.commitTransaction();
+      session.endSession();
+
+      const populatedAppointment = await Appointment.findById(appointment[0]._id)
+        .populate('patientId', 'name email phone')
+        .populate({
+          path: 'doctorId',
+          populate: {
+            path: 'userId',
+            select: 'name email',
+          },
+        });
+
+      // Send email notifications
+      try {
+        // Get patient and doctor info
+        const patient = await User.findById(req.user._id);
+        const doctorUser = await User.findById(doctor.userId);
+
+        // Format date for email
+        const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
+        // Send notification to doctor
+        await sendDoctorAppointmentRequest(doctorUser.email, {
+          doctorName: doctorUser.name,
+          patientName: patient.name,
+          date: formattedDate,
+          time: timeSlot,
+          reason,
+        });
+
+        // Send real-time notification to doctor
+        notifyNewAppointment(doctorUser._id.toString(), {
+          appointmentId: appointment[0]._id,
+          patientName: patient.name,
+          date: formattedDate,
+          timeSlot,
+          reason,
+        });
+
+        console.log('✅ Email notifications sent successfully');
+      } catch (emailError) {
+        console.error('⚠️  Email notification failed:', emailError.message);
+        // Don't fail the request if email fails
+      }
+
+      res.status(201).json(populatedAppointment);
+    } catch (transactionError) {
+      await session.abortTransaction();
+      session.endSession();
+      throw transactionError;
     }
-
-    res.status(201).json(populatedAppointment);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

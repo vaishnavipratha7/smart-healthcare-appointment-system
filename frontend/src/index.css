@@ -14,6 +14,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  @apply bg-white dark:bg-gray-900;
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
 }
 
 /* Mobile-friendly touch targets */
@@ -40,16 +48,16 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  @apply bg-gray-100 dark:bg-gray-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  @apply bg-gray-400 dark:bg-gray-600;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  @apply bg-gray-500 dark:bg-gray-500;
 }
 
 /* Animations */
@@ -81,6 +89,77 @@ html {
   animation: fadeIn 0.3s ease-in-out;
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+  background-size: 1000px 100%;
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes bounce-soft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-soft {
+  animation: bounce-soft 2s ease-in-out infinite;
+}
+
 /* Mobile responsive utilities */
 @layer utilities {
   .touch-manipulation {
@@ -92,6 +171,19 @@ html {
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+  
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
