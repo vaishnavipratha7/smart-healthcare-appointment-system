@@ -2,13 +2,15 @@
 node_modules/
 
 # ─── Environment / Secrets ───────────────────────────────────────────────────
-# Never commit real credentials. Commit .env.example instead.
+# Never commit real credentials.
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-
+/backend/.env.example
+/frontend/.env.example
+/ml/.env.example
 # ─── Build output ────────────────────────────────────────────────────────────
 build/
 dist/
@@ -70,3 +72,40 @@ dist/
 venv/
 env/
 .env/
+
+# ML module specific
+ml/__pycache__/
+ml/*.pyc
+ml/logs/
+ml/test_api.ps1
+
+# ─── Internal Documentation (not for repo) ──────────────────────────────────
+AI_INTEGRATION_SUMMARY.md
+QUICKSTART_AI.md
+IMPLEMENTATION_COMPLETE.md
+QUICK_REFERENCE.md
+PROJECT_SUMMARY.md
+GIT_COMMIT_GUIDE.md
+AI_Powered_Appointment_Assistant_Implementation_Guide.md
+/docs
+
+# ─── Legacy/Test Files ───────────────────────────────────────────────────────
+_legacy_root_backend/
+backend/test_ai_endpoint.ps1
+ml/test_api.ps1
+
+# ─── Python / ML artifacts ──────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pkl
+*.joblib
+*.model
+ml/models/*.pkl
+ml/models/*.joblib
+
+# ─── Temp/Demo Files ─────────────────────────────────────────────────────────
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

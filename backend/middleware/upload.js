@@ -43,47 +43,59 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Create unique filename: userId_timestamp_originalname
-    const userId = req.user?._id || 'unknown';
+    // SECURITY FIX: Use cryptographically secure random filename
+    const crypto = require('crypto');
+    const userId = req.user?._id || 'anonymous';
     const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    const nameWithoutExt = path.basename(file.originalname, ext);
-    const sanitizedName = nameWithoutExt.replace(/[^a-zA-Z0-9]/g, '_');
+    const randomBytes = crypto.randomBytes(16).toString('hex');
+    const ext = path.extname(file.originalname).toLowerCase();
     
-    const filename = `${userId}_${timestamp}_${sanitizedName}${ext}`;
+    // Validate extension is safe
+    const safeExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.doc', '.docx', '.dcm'];
+    if (!safeExtensions.includes(ext)) {
+      return cb(new Error('Invalid file extension'), null);
+    }
+    
+    const filename = `${userId}_${timestamp}_${randomBytes}${ext}`;
+    
+    // Store original filename in request for database storage
+    req.originalFileName = file.originalname;
+    
     cb(null, filename);
   },
 });
 
 // File filter for validation
 const fileFilter = (req, file, cb) => {
-  // Allowed file types
-  const allowedImageTypes = /jpeg|jpg|png|gif|webp/;
-  const allowedDocTypes = /pdf|doc|docx/;
-  const allowedMedicalTypes = /jpeg|jpg|png|pdf|dcm|dicom/;
+  // SECURITY FIX: Validate both extension AND MIME type (defense in depth)
+  const allowedImageMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  const allowedDocMimes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  const allowedMedicalMimes = [...allowedImageMimes, ...allowedDocMimes, 'application/dicom'];
 
-  const ext = path.extname(file.originalname).toLowerCase().slice(1);
+  const ext = path.extname(file.originalname).toLowerCase();
   const mimetype = file.mimetype.toLowerCase();
 
   let isValid = false;
   let errorMessage = 'Invalid file type';
 
-  // Validate based on field name
+  // Validate both extension AND MIME type
   if (file.fieldname === 'certificate') {
-    // Certificates: PDF, DOC, DOCX, images
-    isValid = allowedDocTypes.test(ext) || allowedImageTypes.test(ext);
+    const allowedExts = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+    isValid = allowedExts.includes(ext) && 
+              (allowedDocMimes.includes(mimetype) || allowedImageMimes.includes(mimetype));
     errorMessage = 'Certificates must be PDF, DOC, DOCX, or image files';
   } else if (file.fieldname === 'medicalRecord') {
-    // Medical records: PDF, images, DICOM
-    isValid = allowedMedicalTypes.test(ext);
+    const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png', '.dcm'];
+    isValid = allowedExts.includes(ext) && allowedMedicalMimes.includes(mimetype);
     errorMessage = 'Medical records must be PDF, image, or DICOM files';
   } else if (file.fieldname === 'profilePicture') {
-    // Profile pictures: Images only
-    isValid = allowedImageTypes.test(ext);
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    isValid = allowedExts.includes(ext) && allowedImageMimes.includes(mimetype);
     errorMessage = 'Profile pictures must be image files (JPEG, PNG, GIF, WebP)';
   } else {
-    // Generic document upload
-    isValid = allowedDocTypes.test(ext) || allowedImageTypes.test(ext);
+    const allowedExts = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+    isValid = allowedExts.includes(ext) && 
+              (allowedDocMimes.includes(mimetype) || allowedImageMimes.includes(mimetype));
     errorMessage = 'Only PDF, DOC, DOCX, and image files are allowed';
   }
 
@@ -100,6 +112,8 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max file size
+    files: 5, // Max 5 files per request
+    fields: 10, // Max 10 non-file fields
   },
 });
 

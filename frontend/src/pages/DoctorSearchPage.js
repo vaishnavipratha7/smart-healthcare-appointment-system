@@ -144,11 +144,11 @@ const DoctorSearchPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Find a Doctor</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Find a Doctor</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
             Search and filter doctors by specialty, location, and availability
           </p>
         </div>
@@ -156,12 +156,12 @@ const DoctorSearchPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Filter Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h2>
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                 >
                   Clear All
                 </button>
@@ -169,23 +169,23 @@ const DoctorSearchPage = () => {
 
               {/* Search */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
                 <input
                   type="text"
                   placeholder="Doctor name or hospital"
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Specialization */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Specialization</label>
                 <select
                   value={filters.specialization}
                   onChange={(e) => handleFilterChange('specialization', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Specializations</option>
                   {specializations.map((spec) => (
@@ -196,11 +196,11 @@ const DoctorSearchPage = () => {
 
               {/* Hospital */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Hospital</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hospital</label>
                 <select
                   value={filters.hospital}
                   onChange={(e) => handleFilterChange('hospital', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Hospitals</option>
                   {hospitals.map((hosp) => (
@@ -211,44 +211,44 @@ const DoctorSearchPage = () => {
 
               {/* Fee Range */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Consultation Fee (₹)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Consultation Fee (₹)</label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
                     placeholder="Min"
                     value={filters.minFee}
                     onChange={(e) => handleFilterChange('minFee', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="number"
                     placeholder="Max"
                     value={filters.maxFee}
                     onChange={(e) => handleFilterChange('maxFee', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Experience */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Min Experience (years)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min Experience (years)</label>
                 <input
                   type="number"
                   placeholder="e.g. 5"
                   value={filters.minExperience}
                   onChange={(e) => handleFilterChange('minExperience', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Available Day */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Available On</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Available On</label>
                 <select
                   value={filters.availableDay}
                   onChange={(e) => handleFilterChange('availableDay', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Any Day</option>
                   {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map((d) => (
@@ -259,11 +259,11 @@ const DoctorSearchPage = () => {
 
               {/* Time Slot */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Time</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preferred Time</label>
                 <select
                   value={filters.availableTime}
                   onChange={(e) => handleFilterChange('availableTime', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Any Time</option>
                   <option value="09:00">Morning (9 AM)</option>
@@ -275,11 +275,11 @@ const DoctorSearchPage = () => {
 
               {/* Sort — combined value splits into sortBy:sortOrder */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort By</label>
                 <select
                   value={filters.sortBy ? `${filters.sortBy}:${filters.sortOrder}` : ''}
                   onChange={(e) => handleSortChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Default</option>
                   <option value="name:asc">Name (A–Z)</option>
@@ -296,8 +296,8 @@ const DoctorSearchPage = () => {
           {/* Results */}
           <div className="lg:col-span-3">
             {/* Results count */}
-            <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-              <p className="text-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
+              <p className="text-gray-700 dark:text-gray-300">
                 {loading ? (
                   'Searching...'
                 ) : (
@@ -314,13 +314,13 @@ const DoctorSearchPage = () => {
             )}
 
             {!loading && doctors.length === 0 && (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No doctors found</h3>
-                <p className="mt-1 text-gray-500">Try adjusting your filters to find more results</p>
+                <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No doctors found</h3>
+                <p className="mt-1 text-gray-500 dark:text-gray-400">Try adjusting your filters to find more results</p>
               </div>
             )}
 
@@ -330,10 +330,10 @@ const DoctorSearchPage = () => {
                   {doctors.map((doctor) => (
                     <div
                       key={doctor._id}
-                      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden"
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden"
                     >
                       {/* Avatar */}
-                      <div className="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                      <div className="h-48 bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center">
                         <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-4xl font-bold text-blue-600">
                           {doctor.userId?.name?.charAt(0).toUpperCase() || 'D'}
                         </div>
@@ -341,23 +341,23 @@ const DoctorSearchPage = () => {
 
                       {/* Info */}
                       <div className="p-4">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           Dr. {doctor.userId?.name || 'Unknown'}
                         </h3>
-                        <p className="text-sm text-blue-600 font-medium">{doctor.specialization}</p>
-                        <p className="text-sm text-gray-600 mt-1">{doctor.hospital}</p>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{doctor.specialization}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{doctor.hospital}</p>
 
                         <div className="mt-2">
                           {doctor.averageRating > 0 ? (
                             renderStars(doctor.averageRating)
                           ) : (
-                            <span className="text-sm text-gray-500">No ratings yet</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">No ratings yet</span>
                           )}
                         </div>
 
                         <div className="mt-3 flex justify-between items-center text-sm">
-                          <span className="text-gray-600">{doctor.experience} yrs exp.</span>
-                          <span className="font-semibold text-green-600">₹{doctor.consultationFee}</span>
+                          <span className="text-gray-600 dark:text-gray-300">{doctor.experience} yrs exp.</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">₹{doctor.consultationFee}</span>
                         </div>
 
                         {/* Book button — goes to patient dashboard where booking form lives */}
@@ -378,7 +378,7 @@ const DoctorSearchPage = () => {
                     <button
                       onClick={() => setPagination((prev) => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
                       disabled={pagination.page === 1}
-                      className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       Previous
                     </button>
@@ -391,7 +391,7 @@ const DoctorSearchPage = () => {
                           className={`px-4 py-2 rounded-md ${
                             pagination.page === idx + 1
                               ? 'bg-blue-600 text-white'
-                              : 'border border-gray-300 hover:bg-gray-50'
+                              : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                           }`}
                         >
                           {idx + 1}
@@ -402,7 +402,7 @@ const DoctorSearchPage = () => {
                     <button
                       onClick={() => setPagination((prev) => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
                       disabled={pagination.page === pagination.pages}
-                      className="px-4 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       Next
                     </button>

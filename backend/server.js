@@ -24,6 +24,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 // Initialize express app
 const app = express();
@@ -63,6 +64,7 @@ app.use('/uploads', express.static('uploads'));
 // Rate Limiting
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/ai', authLimiter); // Protect AI endpoints (expensive ML operations)
 app.use('/api', apiLimiter);
 
 // Routes
@@ -73,6 +75,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ai', aiRoutes); // AI-powered appointment assistant
 
 // Health check route
 app.get('/api/health', (req, res) => {

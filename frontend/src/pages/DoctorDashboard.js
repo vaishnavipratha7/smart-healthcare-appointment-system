@@ -45,17 +45,17 @@ const AppointmentActionPanel = ({ action, onConfirm, onCancel }) => {
   const canSubmit = config.required ? text.trim().length > 0 : true;
 
   return (
-    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-      <p className="text-sm font-semibold text-gray-700">{config.label}</p>
+    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{config.label}</p>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={2}
         placeholder={config.placeholder}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
       />
       {config.required && text.trim().length === 0 && (
-        <p className="text-xs text-red-500">A reason is required to reject.</p>
+        <p className="text-xs text-red-500 dark:text-red-400">A reason is required to reject.</p>
       )}
       <div className="flex gap-2">
         <button
@@ -67,7 +67,7 @@ const AppointmentActionPanel = ({ action, onConfirm, onCancel }) => {
         </button>
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-md text-sm border border-gray-300 hover:bg-gray-50 transition"
+          className="px-4 py-2 rounded-md text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
         >
           Cancel
         </button>
@@ -262,23 +262,23 @@ const DoctorDashboard = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8" data-testid="doctor-dashboard">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors duration-200" data-testid="doctor-dashboard">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Doctor Dashboard</h1>
-          <p className="mt-2 text-gray-600">Welcome back, Dr. {user.name}!</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Doctor Dashboard</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">Welcome back, Dr. {user.name}!</p>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-md">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-4 bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md">
+          <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-md">
             {success}
           </div>
         )}
@@ -286,13 +286,13 @@ const DoctorDashboard = () => {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total Appointments', value: stats.total,     color: 'text-gray-900' },
-            { label: 'Pending',            value: stats.pending,   color: 'text-yellow-600' },
-            { label: 'Approved',           value: stats.approved,  color: 'text-green-600' },
-            { label: 'Completed',          value: stats.completed, color: 'text-blue-600' },
+            { label: 'Total Appointments', value: stats.total,     color: 'text-gray-900 dark:text-white' },
+            { label: 'Pending',            value: stats.pending,   color: 'text-yellow-600 dark:text-yellow-400' },
+            { label: 'Approved',           value: stats.approved,  color: 'text-green-600 dark:text-green-400' },
+            { label: 'Completed',          value: stats.completed, color: 'text-blue-600 dark:text-blue-400' },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-gray-500 text-sm font-medium">{label}</h3>
+            <div key={label} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border dark:border-gray-700">
+              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">{label}</h3>
               <p className={`text-3xl font-bold mt-2 ${color}`}>{value}</p>
             </div>
           ))}
@@ -300,9 +300,9 @@ const DoctorDashboard = () => {
 
         {/* Profile Section */}
         {profile && (
-          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8 border dark:border-gray-700">
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-semibold">My Profile</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">My Profile</h2>
               <button
                 onClick={() => setShowProfileEdit(!showProfileEdit)}
                 className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md transition"
@@ -312,7 +312,7 @@ const DoctorDashboard = () => {
             </div>
 
             {!showProfileEdit ? (
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
                 <div><strong>Specialization:</strong> {profile.specialization}</div>
                 <div><strong>Hospital:</strong> {profile.hospital}</div>
                 <div><strong>Qualification:</strong> {profile.qualification}</div>
@@ -322,8 +322,8 @@ const DoctorDashboard = () => {
                   <strong>Status:</strong>{' '}
                   <span className={`px-2 py-1 rounded text-xs font-semibold ${
                     profile.status === 'approved'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                   }`}>
                     {profile.status}
                   </span>
@@ -340,7 +340,7 @@ const DoctorDashboard = () => {
                     { label: 'Consultation Fee',    key: 'consultationFee', type: 'number' },
                   ].map(({ label, key, type }) => (
                     <div key={key}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
                       <input
                         type={type}
                         value={profileForm[key] || ''}
@@ -348,33 +348,33 @@ const DoctorDashboard = () => {
                           ...profileForm,
                           [key]: type === 'number' ? parseInt(e.target.value) : e.target.value,
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
                   ))}
 
                   {/* Availability slot builder */}
-                  <div className="md:col-span-2 border-t pt-4 mt-2">
-                    <h3 className="font-semibold mb-3">Availability</h3>
+                  <div className="md:col-span-2 border-t dark:border-gray-600 pt-4 mt-2">
+                    <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Availability</h3>
                     <div className="flex flex-wrap gap-2 mb-3">
                       <select
                         value={slotDay}
                         onChange={(e) => setSlotDay(e.target.value)}
-                        className="border px-2 py-1 rounded"
+                        className="border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 rounded"
                       >
                         {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map((d) => (
                           <option key={d}>{d}</option>
                         ))}
                       </select>
-                      <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border px-2 py-1 rounded" />
-                      <span className="self-center text-gray-500">to</span>
-                      <input type="time" value={endTime}   onChange={(e) => setEndTime(e.target.value)}   className="border px-2 py-1 rounded" />
+                      <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 rounded" />
+                      <span className="self-center text-gray-500 dark:text-gray-400">to</span>
+                      <input type="time" value={endTime}   onChange={(e) => setEndTime(e.target.value)}   className="border dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1 rounded" />
                       <button type="button" onClick={addSlot} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition">
                         Add
                       </button>
                     </div>
                     {profileForm.availableSlots?.map((slot) => (
-                      <p key={slot.day} className="text-sm text-gray-700">
+                      <p key={slot.day} className="text-sm text-gray-700 dark:text-gray-300">
                         <strong>{slot.day}:</strong>{' '}
                         {slot.times.length > 0
                           ? `${slot.times[0]} – ${slot.times[slot.times.length - 1]} (${slot.times.length} slots)`
@@ -393,7 +393,7 @@ const DoctorDashboard = () => {
         )}
 
         {/* Tab Bar */}
-        <div className="flex space-x-1 mb-6 bg-white rounded-xl shadow-md p-1 w-fit">
+        <div className="flex space-x-1 mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-md p-1 w-fit border dark:border-gray-700">
           {[
             { id: 'appointments', label: '🗓 Appointments' },
             { id: 'reviews',      label: `⭐ Reviews${reviewStats.totalReviews > 0 ? ` (${reviewStats.totalReviews})` : ''}` },
@@ -404,7 +404,7 @@ const DoctorDashboard = () => {
               className={`px-6 py-2 rounded-lg text-sm font-medium transition ${
                 activeTab === id
                   ? 'bg-primary-600 text-white shadow'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               {label}
@@ -414,13 +414,13 @@ const DoctorDashboard = () => {
 
         {/* ── Appointments Tab ──────────────────────────────────────────────── */}
         {activeTab === 'appointments' && (
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border dark:border-gray-700">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">Appointments</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Appointments</h2>
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 data-testid="filter-select"
               >
                 <option value="all">All</option>
@@ -432,23 +432,23 @@ const DoctorDashboard = () => {
             </div>
 
             {filteredAppointments.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No appointments found.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">No appointments found.</p>
             ) : (
               <div className="space-y-4">
                 {filteredAppointments.map((apt) => {
                   const currentAction = activeAction[apt._id];
                   return (
-                    <div key={apt._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition" data-testid="appointment-card">
+                    <div key={apt._id} className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 rounded-lg p-4 hover:shadow-md transition" data-testid="appointment-card">
                       <div className="flex justify-between items-start">
                         {/* Patient info */}
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
-                            <h3 className="text-lg font-semibold text-gray-900">{apt.patientId?.name || 'N/A'}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{apt.patientId?.name || 'N/A'}</h3>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(apt.status)}`}>
                               {apt.status.toUpperCase()}
                             </span>
                           </div>
-                          <div className="mt-2 space-y-1">
+                          <div className="mt-2 space-y-1 text-gray-700 dark:text-gray-300">
                             <p className="text-sm"><strong>Email:</strong> {apt.patientId?.email}</p>
                             <p className="text-sm"><strong>Phone:</strong> {apt.patientId?.phone}</p>
                             <p className="text-sm"><strong>Date:</strong> {new Date(apt.appointmentDate).toLocaleDateString()}</p>
@@ -456,7 +456,7 @@ const DoctorDashboard = () => {
                             <p className="text-sm"><strong>Reason:</strong> {apt.reason}</p>
                             {apt.notes && <p className="text-sm"><strong>Notes:</strong> {apt.notes}</p>}
                             {apt.rejectionReason && (
-                              <p className="text-sm text-red-600"><strong>Rejection Reason:</strong> {apt.rejectionReason}</p>
+                              <p className="text-sm text-red-600 dark:text-red-400"><strong>Rejection Reason:</strong> {apt.rejectionReason}</p>
                             )}
                           </div>
                         </div>
@@ -517,15 +517,15 @@ const DoctorDashboard = () => {
 
         {/* ── Reviews Tab ───────────────────────────────────────────────────── */}
         {activeTab === 'reviews' && (
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border dark:border-gray-700">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold">Patient Reviews</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Patient Reviews</h2>
               {profile && (
                 <div className="text-right">
                   <p className="text-2xl font-bold text-yellow-500">
                     ⭐ {reviewStats.averageRating > 0 ? reviewStats.averageRating.toFixed(1) : '—'}
                   </p>
-                  <p className="text-sm text-gray-500">{reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? 's' : ''}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{reviewStats.totalReviews} review{reviewStats.totalReviews !== 1 ? 's' : ''}</p>
                 </div>
               )}
             </div>
@@ -535,16 +535,16 @@ const DoctorDashboard = () => {
             ) : reviews.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-4xl mb-3">⭐</p>
-                <p className="text-gray-500">No reviews yet.</p>
-                <p className="text-sm text-gray-400 mt-1">Reviews will appear here once patients complete appointments and leave feedback.</p>
+                <p className="text-gray-500 dark:text-gray-400">No reviews yet.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Reviews will appear here once patients complete appointments and leave feedback.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {reviews.map((review) => (
-                  <div key={review._id} className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition">
+                  <div key={review._id} className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700/50 rounded-lg p-5 hover:shadow-md transition">
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <p className="font-semibold text-gray-900">{review.patientId?.name || 'Anonymous'}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{review.patientId?.name || 'Anonymous'}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           {new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
@@ -553,13 +553,13 @@ const DoctorDashboard = () => {
                     </div>
 
                     {review.comment && (
-                      <p className="text-sm text-gray-700 mb-3">{review.comment}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{review.comment}</p>
                     )}
 
                     {review.doctorResponse?.comment && (
-                      <div className="bg-blue-50 border border-blue-100 rounded-md px-4 py-3 mb-3">
-                        <p className="text-xs font-semibold text-blue-700 mb-1">Your response</p>
-                        <p className="text-sm text-blue-800">{review.doctorResponse.comment}</p>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-4 py-3 mb-3">
+                        <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Your response</p>
+                        <p className="text-sm text-blue-800 dark:text-blue-300">{review.doctorResponse.comment}</p>
                         <p className="text-xs text-blue-400 mt-1">
                           {new Date(review.doctorResponse.respondedAt).toLocaleDateString()}
                         </p>
@@ -571,7 +571,7 @@ const DoctorDashboard = () => {
                         {respondingTo !== review._id ? (
                           <button
                             onClick={() => { setRespondingTo(review._id); setResponseText(''); }}
-                            className="text-sm text-primary-600 hover:text-primary-800 font-medium"
+                            className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium"
                           >
                             + Respond to this review
                           </button>
@@ -583,7 +583,7 @@ const DoctorDashboard = () => {
                               rows={3}
                               maxLength={500}
                               placeholder="Write a professional response…"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             />
                             <div className="flex gap-2">
                               <button
@@ -595,7 +595,7 @@ const DoctorDashboard = () => {
                               </button>
                               <button
                                 onClick={() => setRespondingTo(null)}
-                                className="px-4 py-2 rounded-md text-sm border border-gray-300 hover:bg-gray-50 transition"
+                                className="px-4 py-2 rounded-md text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                               >
                                 Cancel
                               </button>

@@ -22,6 +22,8 @@ const seedData = async () => {
         phone: '9999999999',
         password: 'admin123',
         role: 'admin',
+        isEmailVerified: true, // ✅ Seed users skip verification
+        isActive: true,
       });
       console.log('✅ Admin user created:', admin.email);
     } else {
@@ -37,58 +39,175 @@ const seedData = async () => {
         phone: '1234567890',
         password: 'patient123',
         role: 'patient',
+        isEmailVerified: true, // ✅ Seed users skip verification
+        isActive: true,
       });
       console.log('✅ Sample patient created:', patient.email);
     } else {
       console.log('ℹ️  Sample patient already exists');
     }
 
-    // Create sample doctor user
-    const doctorUserExists = await User.findOne({ email: 'doctor@test.com' });
-    let doctorUser;
-    if (!doctorUserExists) {
-      doctorUser = await User.create({
+    // Create sample doctor users for AI demo (all 10 specializations)
+    const doctorData = [
+      {
         name: 'Dr. Sarah Smith',
-        email: 'doctor@test.com',
+        email: 'doctor.cardiology@test.com',
         phone: '9876543210',
-        password: 'doctor123',
-        role: 'doctor',
-      });
-      console.log('✅ Sample doctor user created:', doctorUser.email);
-    } else {
-      doctorUser = doctorUserExists;
-      console.log('ℹ️  Sample doctor user already exists');
+        specialization: 'Cardiology',
+        hospital: 'City Heart Institute',
+        qualification: 'MD Cardiology, MBBS',
+        experience: 15,
+        fee: 1000,
+      },
+      {
+        name: 'Dr. Emily Johnson',
+        email: 'doctor.dermatology@test.com',
+        phone: '9876543211',
+        specialization: 'Dermatology',
+        hospital: 'Skin Care Clinic',
+        qualification: 'MD Dermatology, MBBS',
+        experience: 10,
+        fee: 800,
+      },
+      {
+        name: 'Dr. Michael Chen',
+        email: 'doctor.neurology@test.com',
+        phone: '9876543212',
+        specialization: 'Neurology',
+        hospital: 'Brain & Nerve Center',
+        qualification: 'MD Neurology, DM',
+        experience: 18,
+        fee: 1200,
+      },
+      {
+        name: 'Dr. Robert Williams',
+        email: 'doctor.orthopedics@test.com',
+        phone: '9876543213',
+        specialization: 'Orthopedics',
+        hospital: 'Bone & Joint Hospital',
+        qualification: 'MS Orthopedics, MBBS',
+        experience: 12,
+        fee: 900,
+      },
+      {
+        name: 'Dr. Jennifer Martinez',
+        email: 'doctor.pediatrics@test.com',
+        phone: '9876543214',
+        specialization: 'Pediatrics',
+        hospital: 'Children\'s Hospital',
+        qualification: 'MD Pediatrics, MBBS',
+        experience: 14,
+        fee: 700,
+      },
+      {
+        name: 'Dr. David Anderson',
+        email: 'doctor.gastro@test.com',
+        phone: '9876543215',
+        specialization: 'Gastroenterology',
+        hospital: 'Digestive Health Center',
+        qualification: 'MD Gastroenterology, DM',
+        experience: 16,
+        fee: 1100,
+      },
+      {
+        name: 'Dr. Lisa Brown',
+        email: 'doctor.ophthalmology@test.com',
+        phone: '9876543216',
+        specialization: 'Ophthalmology',
+        hospital: 'Eye Care Institute',
+        qualification: 'MS Ophthalmology, MBBS',
+        experience: 11,
+        fee: 850,
+      },
+      {
+        name: 'Dr. James Wilson',
+        email: 'doctor.ent@test.com',
+        phone: '9876543217',
+        specialization: 'ENT',
+        hospital: 'ENT Specialty Clinic',
+        qualification: 'MS ENT, MBBS',
+        experience: 13,
+        fee: 750,
+      },
+      {
+        name: 'Dr. Maria Garcia',
+        email: 'doctor.psychiatry@test.com',
+        phone: '9876543218',
+        specialization: 'Psychiatry',
+        hospital: 'Mental Health Center',
+        qualification: 'MD Psychiatry, MBBS',
+        experience: 9,
+        fee: 1000,
+      },
+      {
+        name: 'Dr. Thomas Lee',
+        email: 'doctor.general@test.com',
+        phone: '9876543219',
+        specialization: 'General Medicine',
+        hospital: 'City General Hospital',
+        qualification: 'MBBS, MD',
+        experience: 20,
+        fee: 500,
+      },
+    ];
+
+    const doctorUsers = [];
+    for (const doc of doctorData) {
+      const exists = await User.findOne({ email: doc.email });
+      if (!exists) {
+        const user = await User.create({
+          name: doc.name,
+          email: doc.email,
+          phone: doc.phone,
+          password: 'doctor123',
+          role: 'doctor',
+          isEmailVerified: true, // ✅ Seed users skip verification
+          isActive: true,
+        });
+        doctorUsers.push({ user, ...doc });
+        console.log(`✅ Doctor user created: ${user.email}`);
+      } else {
+        doctorUsers.push({ user: exists, ...doc });
+        console.log(`ℹ️  Doctor user already exists: ${doc.email}`);
+      }
     }
 
-    // Create doctor profile
-    const doctorProfileExists = await Doctor.findOne({ userId: doctorUser._id });
-    if (!doctorProfileExists) {
-      const doctorProfile = await Doctor.create({
-        userId: doctorUser._id,
-        specialization: 'Cardiology',
-        hospital: 'City General Hospital',
-        qualification: 'MD, MBBS',
-        experience: 10,
-        consultationFee: 500,
-        availableSlots: [
-          { day: 'Monday', times: ['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM'] },
-          { day: 'Tuesday', times: ['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM'] },
-          { day: 'Wednesday', times: ['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM'] },
-          { day: 'Thursday', times: ['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM'] },
-          { day: 'Friday', times: ['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM'] },
-        ],
-        status: 'approved',
-      });
-      console.log('✅ Doctor profile created');
-    } else {
-      console.log('ℹ️  Doctor profile already exists');
+    // Create doctor profiles
+    for (const docData of doctorUsers) {
+      const profileExists = await Doctor.findOne({ userId: docData.user._id });
+      if (!profileExists) {
+        await Doctor.create({
+          userId: docData.user._id,
+          specialization: docData.specialization,
+          hospital: docData.hospital,
+          qualification: docData.qualification,
+          experience: docData.experience,
+          consultationFee: docData.fee,
+          availableSlots: [
+            { day: 'Monday', times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'] },
+            { day: 'Tuesday', times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'] },
+            { day: 'Wednesday', times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'] },
+            { day: 'Thursday', times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'] },
+            { day: 'Friday', times: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'] },
+          ],
+          status: 'approved',
+        });
+        console.log(`✅ ${docData.specialization} doctor profile created`);
+      } else {
+        console.log(`ℹ️  ${docData.specialization} doctor profile already exists`);
+      }
     }
 
     console.log('\n🎉 Seed data created successfully!');
     console.log('\n📝 Test Credentials:');
     console.log('   Admin: admin@healthcare.com / admin123');
     console.log('   Patient: patient@test.com / patient123');
-    console.log('   Doctor: doctor@test.com / doctor123');
+    console.log('   Doctors: doctor.[specialization]@test.com / doctor123');
+    console.log('   Example: doctor.cardiology@test.com / doctor123');
+    console.log('\n✨ AI Integration Ready:');
+    console.log('   - 10 doctors across all specializations');
+    console.log('   - All users have email verification bypassed');
+    console.log('   - Ready for AI symptom analysis testing');
 
     process.exit(0);
   } catch (error) {
