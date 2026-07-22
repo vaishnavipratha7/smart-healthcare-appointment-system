@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
 const { sendWelcomeEmail, sendOTPEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { shouldRequireEmailVerification } = require('../utils/authConfig');
 
 const defaultAvailableSlots = [
   {
@@ -113,11 +114,17 @@ const register = async (req, res) => {
       console.error('⚠️  OTP email failed:', emailError.message);
     }
 
+    const requiresVerification = shouldRequireEmailVerification();
+    const successMessage = requiresVerification
+      ? 'Registration successful. Please check your email for a verification code.'
+      : 'Registration successful. Your account is ready to use.';
+
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please check your email for a verification code.',
+      message: successMessage,
       email: user.email,
       doctorProfile,
+      requiresVerification,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -244,7 +251,7 @@ const login = async (req, res) => {
     }
 
     // Check if email is verified
-    if (!user.isEmailVerified) {
+    if (!user.isEmailVerified && shouldRequireEmailVerification()) {
       return res.status(403).json({
         message: 'Please verify your email before logging in',
         requiresVerification: true,
@@ -276,6 +283,7 @@ const login = async (req, res) => {
       role: user.role,
       doctorProfile: doctorProfile,
       token: accessToken,
+      requiresVerification: false,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -60,9 +60,11 @@ const Register = () => {
       const { confirmPassword, ...registerData } = formValues;
       const response = await register(registerData);
 
-      // Registration no longer logs the user in — an OTP was sent instead.
-      // Send them to the verification screen with their email pre-filled.
-      navigate('/verify-otp', { state: { email: response.email || registerData.email } });
+      if (response.requiresVerification) {
+        navigate('/verify-otp', { state: { email: response.email || registerData.email } });
+      } else {
+        navigate('/login');
+      }
     } catch (err) {
       setSubmitError(err.response?.data?.message || 'Registration failed. Please try again.');
     }
