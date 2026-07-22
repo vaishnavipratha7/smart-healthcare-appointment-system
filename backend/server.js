@@ -29,6 +29,9 @@ const aiRoutes = require('./routes/aiRoutes');
 // Initialize express app
 const app = express();
 
+// Trust Render/Vercel proxy headers for accurate rate limiting and client IPs
+app.set('trust proxy', 1);
+
 // Create HTTP server
 const httpServer = http.createServer(app);
 
