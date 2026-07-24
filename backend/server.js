@@ -53,8 +53,24 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(cookieParser());
 
 // CORS Configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'https://smart-healthcare-appointment-system-ochre.vercel.app',
+  'https://smart-healthcare-appointment-system-sn64.onrender.com',
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin) {
+      // Allow non-browser requests like server-side calls, curl, or Postman
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS policy does not allow access from origin ${origin}`));
+  },
   credentials: true,
 }));
 
