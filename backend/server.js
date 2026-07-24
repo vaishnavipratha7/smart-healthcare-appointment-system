@@ -53,10 +53,17 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(cookieParser());
 
 // CORS Configuration
+const extraOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  ...extraOrigins,
   'http://localhost:3000',
   'https://smart-healthcare-appointment-system-ochre.vercel.app',
+  'https://smart-healthcare-appointment-system-8s9wrz8by.vercel.app',
   'https://smart-healthcare-appointment-system-sn64.onrender.com',
 ].filter(Boolean);
 
