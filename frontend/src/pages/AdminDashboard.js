@@ -271,13 +271,16 @@ const doctorUsers = users.filter(
                 className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-md transition"
                 data-testid="create-doctor-btn"
               >
-                {showCreateDoctor ? 'Cancel' : '+ Create Doctor Profile'}
-              </button>
-            </div>
+              {showCreateDoctor ? 'Cancel' : '+ Promote User to Doctor'}
+            </button>
+          </div>
 
             {showCreateDoctor && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Create Doctor Profile</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Promote a Registered User to Doctor</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2 mb-4">
+                  The user must already have an account. Select them below and fill in their professional details to grant doctor access.
+                </p>
                 <form onSubmit={handleCreateDoctor} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Doctor User</label>

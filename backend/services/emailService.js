@@ -10,12 +10,15 @@ const createTransporter = () => {
   // Development: Use Ethereal email (fake SMTP service)
   if (process.env.NODE_ENV === 'development' && !process.env.EMAIL_HOST) {
     console.log('⚠️  Using Ethereal email for development. Configure EMAIL_HOST for production.');
-    // Note: In production, you should set up real email credentials
-    // For now, we'll create a test account on first use
-    return null; // Will be created dynamically
+    return null; // Will be created dynamically for development only
   }
 
-  // Production: Use configured SMTP
+  if (!process.env.EMAIL_HOST) {
+    console.error('❌ EMAIL_HOST is not configured. SMTP email will not work in production.');
+    return null;
+  }
+
+  // SMTP transporter for production or explicit config
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT || 587,
@@ -29,6 +32,14 @@ const createTransporter = () => {
 
 let transporter = createTransporter();
 
+if (transporter) {
+  console.log(`📧 Email service: using SMTP host ${process.env.EMAIL_HOST}`);
+} else if (process.env.NODE_ENV === 'development') {
+  console.log('📧 Email service: using Ethereal development email (no real inbox delivery).');
+} else {
+  console.log('📧 Email service: SMTP is not configured for production. Real emails will not be sent.');
+}
+
 /**
  * Send email with error handling
  */
@@ -36,6 +47,9 @@ const sendEmail = async (mailOptions) => {
   try {
     // Create test account if in development without credentials
     if (!transporter) {
+      if (process.env.NODE_ENV !== 'development') {
+        throw new Error('SMTP transporter is not configured. Set EMAIL_HOST, EMAIL_USER, and EMAIL_PASSWORD in the environment.');
+      }
       const testAccount = await nodemailer.createTestAccount();
       transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
