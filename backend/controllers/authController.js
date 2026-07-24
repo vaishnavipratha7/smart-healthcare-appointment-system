@@ -106,14 +106,6 @@ const register = async (req, res) => {
       });
     }
 
-    // Send OTP — account is NOT logged in until email is verified
-    try {
-      await sendOTPEmail(user.email, { name: user.name, otp });
-      console.log('✅ OTP email sent');
-    } catch (emailError) {
-      console.error('⚠️  OTP email failed:', emailError.message);
-    }
-
     const requiresVerification = shouldRequireEmailVerification();
     const successMessage = requiresVerification
       ? 'Registration successful. Please check your email for a verification code.'
@@ -126,6 +118,11 @@ const register = async (req, res) => {
       doctorProfile,
       requiresVerification,
     });
+
+    // Send OTP in the background so the browser does not wait on the SMTP handshake
+    sendOTPEmail(user.email, { name: user.name, otp })
+      .then(() => console.log('✅ OTP email sent'))
+      .catch((emailError) => console.error('⚠️  OTP email failed:', emailError.message));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -223,9 +220,11 @@ const resendOTP = async (req, res) => {
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendOTPEmail(user.email, { name: user.name, otp });
-
     res.json({ success: true, message: 'A new verification code has been sent to your email' });
+
+    sendOTPEmail(user.email, { name: user.name, otp })
+      .then(() => console.log('✅ OTP resend email sent'))
+      .catch((emailError) => console.error('⚠️  OTP resend failed:', emailError.message));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -318,18 +317,11 @@ const forgotPassword = async (req, res) => {
 
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${rawToken}`;
 
-    try {
-      await sendPasswordResetEmail(user.email, { name: user.name, resetUrl });
-    } catch (emailError) {
-      console.error('⚠️  Password reset email failed:', emailError.message);
-      // Roll back the token so a broken email doesn't leave a dangling valid reset link
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save();
-      return res.status(500).json({ message: 'Failed to send reset email. Please try again later.' });
-    }
-
     res.json(genericResponse);
+
+    sendPasswordResetEmail(user.email, { name: user.name, resetUrl })
+      .then(() => console.log('✅ Password reset email sent'))
+      .catch((emailError) => console.error('⚠️  Password reset email failed:', emailError.message));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
