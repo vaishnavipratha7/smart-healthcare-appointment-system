@@ -122,8 +122,16 @@ const register = async (req, res) => {
 
     // Send OTP in the background so the browser does not wait on the SMTP handshake
     sendOTPEmail(user.email, { name: user.name, otp })
-      .then(() => console.log('✅ OTP email sent'))
-      .catch((emailError) => console.error('⚠️  OTP email failed:', emailError.message));
+  .then((result) => {
+    if (result.success) {
+      console.log('✅ OTP email sent');
+    } else {
+      console.error('❌ OTP email failed:', result.error);
+    }
+  })
+  .catch((emailError) => {
+    console.error('❌ OTP email failed:', emailError.message);
+  });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -224,8 +232,16 @@ const resendOTP = async (req, res) => {
     res.json({ success: true, message: 'A new verification code has been sent to your email' });
 
     sendOTPEmail(user.email, { name: user.name, otp })
-      .then(() => console.log('✅ OTP resend email sent'))
-      .catch((emailError) => console.error('⚠️  OTP resend failed:', emailError.message));
+  .then((result) => {
+    if (result.success) {
+      console.log('✅ OTP email sent');
+    } else {
+      console.error('❌ OTP email failed:', result.error);
+    }
+  })
+  .catch((emailError) => {
+    console.error('❌ OTP email failed:', emailError.message);
+  });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
