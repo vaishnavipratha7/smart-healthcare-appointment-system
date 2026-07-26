@@ -40,6 +40,17 @@ if (transporter) {
   console.log('📧 Email service: SMTP is not configured for production. Real emails will not be sent.');
 }
 
+// NEW: verify SMTP credentials/connection actually work at startup
+if (transporter) {
+  transporter.verify((err) => {
+    if (err) {
+      console.error('❌ SMTP verification failed — emails will NOT send:', err.message);
+    } else {
+      console.log('✅ SMTP verified and ready — emails will send correctly');
+    }
+  });
+}
+
 /**
  * Send email with error handling
  */
