@@ -42,11 +42,12 @@ const generateRefreshToken = (id) => {
 };
 
 const sendRefreshTokenCookie = (res, token) => {
+  const isProd = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProd,                          // must be true when sameSite is 'none'
+    sameSite: isProd ? 'none' : 'lax',        // 'lax' is fine for same-origin local dev
   };
   res.cookie('refreshToken', token, cookieOptions);
 };
@@ -461,13 +462,13 @@ const refresh = async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Public
 const logout = async (req, res) => {
+  const isProd = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', '', {
     httpOnly: true,
     expires: new Date(0),
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
   });
-
   res.json({ success: true, message: 'Logged out successfully' });
 };
 
