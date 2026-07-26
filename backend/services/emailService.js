@@ -19,15 +19,23 @@ const createTransporter = () => {
   }
 
   // SMTP transporter for production or explicit config
+  const port = parseInt(process.env.EMAIL_PORT || '587', 10);
+  
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT || 465,
-    secure: process.env.EMAIL_SECURE === 'true',
-    family:4, // true for 465, false for other ports
+    port: port,
+    secure: port === 465, // true for 465, false for other ports (like 587)
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
     },
+    // Additional options for better Gmail compatibility
+    tls: {
+      rejectUnauthorized: false, // Accept self-signed certificates
+    },
+    connectionTimeout: 10000, // 10 seconds timeout
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
 };
 

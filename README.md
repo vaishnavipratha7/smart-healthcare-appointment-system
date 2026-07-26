@@ -31,3 +31,44 @@ Deployment link coming soon.
 - frontend/: React interface
 - ml/: Python AI service and model scripts
 
+
+
+## Configuration
+
+### Backend `.env`
+```env
+MONGO_URI=mongodb://localhost:27017/smarthealthcare
+JWT_SECRET=your_secret_key_here
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-gmail-app-password
+```
+
+### Frontend `.env`
+```env
+REACT_APP_API_URL=http://localhost:5000
+REACT_APP_SOCKET_URL=http://localhost:5000
+```
+
+> **Gmail Setup:** Enable 2FA → [Generate App Password](https://myaccount.google.com/apppasswords)  
+> **⚠️ Use port 587** (not 465) for better cloud platform compatibility
+
+## Troubleshooting
+
+**Email not working / Connection timeout**  
+→ Use **port 587** instead of 465  
+→ Use Gmail App Password (not regular password)  
+→ Check spam folder
+
+**MongoDB connection failed**  
+→ Ensure MongoDB is running: `mongod`
+
+**Port already in use**  
+→ `npx kill-port 5000`
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed troubleshooting.
+
+## License
+
+MIT
