@@ -43,7 +43,8 @@ connectDB();
 
 // Security Headers
 app.use(helmet({
-  crossOriginResourcePolicy: false, // Allows loading uploads/images across origins
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false, // Disable CSP to prevent eval() errors
 }));
 
 // Request Logging
