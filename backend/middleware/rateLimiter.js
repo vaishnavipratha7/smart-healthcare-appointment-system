@@ -12,14 +12,23 @@ const apiLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
-// Stricter Auth Rate Limiter for Login/Register: max 10 requests per 15 minutes per IP
+// Stricter Auth Rate Limiter for Login/Register: max 50 requests per 15 minutes per IP
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 10 : 100, // relaxed in dev/testing
+  max: process.env.NODE_ENV === 'production' ? 50 : 100, // increased from 10 to 50
   message: {
     success: false,
     message: 'Too many login or registration attempts, please try again after 15 minutes',
   },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// AI Service Rate Limiter: max 20 requests per 15 minutes per IP
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { success: false, message: 'Too many symptom checks, try again in a few minutes' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -40,5 +49,6 @@ const passwordResetLimiter = rateLimit({
 module.exports = {
   apiLimiter,
   authLimiter,
+  aiLimiter,
   passwordResetLimiter,
 };

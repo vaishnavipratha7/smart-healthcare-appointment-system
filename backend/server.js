@@ -14,7 +14,7 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const { initScheduledJobs } = require('./services/scheduledJobs');
 const { initializeSocket } = require('./services/socketService');
-const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const { apiLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiter');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -88,13 +88,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
 // Rate Limiting
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/ai', authLimiter); // Protect AI endpoints (expensive ML operations)
 app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api/auth', authLimiter, authRoutes); // Apply stricter rate limit
+app.use('/api/ai', aiLimiter, aiRoutes); // Apply AI-specific rate limit
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/admin', adminRoutes);

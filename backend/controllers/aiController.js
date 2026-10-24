@@ -36,7 +36,7 @@ const recommendSpecialization = async (req, res) => {
         { symptoms },
         {
           headers: { 'Content-Type': 'application/json' },
-          timeout: 10000, // 10 second timeout
+          timeout: 60000, // 60 second timeout for sleeping services
         }
       );
     } catch (aiError) {
@@ -70,7 +70,7 @@ const recommendSpecialization = async (req, res) => {
 
     // Query doctors by the recommended specialization
     const recommendedDoctors = await Doctor.find({
-      specialization: { $regex: specialization, $options: 'i' },
+      specialization: new RegExp(`^${specialization}$`, 'i'),
       status: 'approved',
       isActive: true,
     })

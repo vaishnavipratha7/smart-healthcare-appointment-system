@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Appointment = require('../models/Appointment');
 const Doctor = require('../models/Doctor');
 const User = require('../models/User');
@@ -75,45 +76,36 @@ const createAppointment = async (req, res) => {
           },
         });
 
-      // Send email notifications
-      try {
-        // Get patient and doctor info
-        const patient = await User.findById(req.user._id);
-        const doctorUser = await User.findById(doctor.userId);
-
-        // Format date for email
-        const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-
-        // Send notification to doctor
-        await sendDoctorAppointmentRequest(doctorUser.email, {
-          doctorName: doctorUser.name,
-          patientName: patient.name,
-          date: formattedDate,
-          time: timeSlot,
-          reason,
-        });
-
-        // Send real-time notification to doctor
-        notifyNewAppointment(doctorUser._id.toString(), {
-          appointmentId: appointment[0]._id,
-          patientName: patient.name,
-          date: formattedDate,
-          timeSlot,
-          reason,
-        });
-
-        console.log('✅ Email notifications sent successfully');
-      } catch (emailError) {
-        console.error('⚠️  Email notification failed:', emailError.message);
-        // Don't fail the request if email fails
-      }
-
       res.status(201).json(populatedAppointment);
+
+      // email + socket notification happen after the response is already sent
+      (async () => {
+        try {
+          const patient = await User.findById(req.user._id);
+          const doctorUser = await User.findById(doctor.userId);
+          const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          });
+
+          sendDoctorAppointmentRequest(doctorUser.email, {
+            doctorName: doctorUser.name,
+            patientName: patient.name,
+            date: formattedDate,
+            time: timeSlot,
+            reason,
+          });
+
+          notifyNewAppointment(doctorUser._id.toString(), {
+            appointmentId: appointment[0]._id,
+            patientName: patient.name,
+            date: formattedDate,
+            timeSlot,
+            reason,
+          });
+        } catch (e) {
+          console.error('Booking notification failed:', e.message);
+        }
+      })();
     } catch (transactionError) {
       await session.abortTransaction();
       session.endSession();

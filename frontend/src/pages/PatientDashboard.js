@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { appointmentService, doctorService, reviewService } from '../services/apiService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import api from '../services/api';
 
 // ── Inline star-rating component ─────────────────────────────────────────────
 const StarRating = ({ value, onChange, readOnly = false }) => (
@@ -228,30 +229,20 @@ const PatientDashboard = () => {
     setAiRecommendation(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/ai/recommend-specialization', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ symptoms: symptoms.trim() }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to analyze symptoms');
-      }
+      const { data } = await api.post(
+        '/ai/recommend-specialization',
+        { symptoms: symptoms.trim() },
+        { timeout: 60000 }
+      );
 
       if (data.success) {
         setAiRecommendation(data);
-        // Pre-fill the reason field with symptoms if user wants to book
         setFormData({ ...formData, reason: symptoms.trim() });
       } else {
         setAiError(data.message || 'Failed to get recommendation');
       }
     } catch (err) {
-      setAiError(err.message || 'AI service is currently unavailable. Please try again later.');
-      console.error('AI Analysis Error:', err);
+      setAiError(err.response?.data?.message || 'AI service is waking up, try again in a minute.');
     } finally {
       setAiAnalyzing(false);
     }
