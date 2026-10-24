@@ -99,7 +99,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/ai', aiRoutes); // AI-powered appointment assistant
 
 // Health check route
 app.get('/api/health', (req, res) => {
