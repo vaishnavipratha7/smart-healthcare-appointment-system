@@ -62,9 +62,10 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   ...extraOrigins,
   'http://localhost:3000',
-  'https://smart-healthcare-appointment-system-ochre.vercel.app',
-  'https://smart-healthcare-appointment-system-8s9wrz8by.vercel.app',
-  'https://smart-healthcare-appointment-system-sn64.onrender.com',
+  //'https://smart-healthcare-appointment-system-ochre.vercel.app',
+  //'https://smart-healthcare-appointment-system-8s9wrz8by.vercel.app',
+  //'https://smart-healthcare-appointment-system-sn64.onrender.com',
+  'https://smart-healthcare-appointment-system-auc6d24pr.vercel.app/'
 ].filter(Boolean);
 
 app.use(cors({
