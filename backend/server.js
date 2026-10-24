@@ -63,7 +63,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   ...extraOrigins,
   'http://localhost:3000',
-  'https://smart-healthcare-appointment-system-auc6d24pr.vercel.app'
+  'https://smart-healthcare-appointment-system-52eb12fpz.vercel.app/'
 ].filter(Boolean);
 
 app.use(cors({
