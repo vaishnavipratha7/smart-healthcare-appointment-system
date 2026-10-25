@@ -44,6 +44,8 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = async (credentials) => {
+    // Clear any stale data before new login
+    authService.logout();
     const userData = await authService.login(credentials);
     setUser(userData);
     return userData;
