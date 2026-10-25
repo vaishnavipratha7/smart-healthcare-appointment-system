@@ -64,6 +64,7 @@ const allowedOrigins = [
   ...extraOrigins,
   'http://localhost:3000',
   'https://smart-healthcare-appointment-system-ochre.vercel.app',
+  'https://smart-healthcare-appointment-system-3t0itg8rn.vercel.app',
 ]
   .filter(Boolean)
   .map((o) => o.replace(/\/+$/, '')); // strip trailing slashes so they always match
