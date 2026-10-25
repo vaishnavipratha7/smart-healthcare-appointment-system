@@ -60,6 +60,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && originalRequest.url.includes('/auth/refresh')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
@@ -84,9 +85,10 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const refreshToken = localStorage.getItem('refreshToken');
         const response = await axios.post(
           `${API_URL}/api/auth/refresh`,
-          {},
+          refreshToken ? { refreshToken } : {}, // send in body if cookie unavailable
           { withCredentials: true }
         );
         const { token } = response.data;
@@ -110,6 +112,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }

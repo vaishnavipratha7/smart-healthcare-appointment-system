@@ -30,6 +30,8 @@ const recommendSpecialization = async (req, res) => {
 
     // Call Python AI service
     let aiResponse;
+    let usedFallback = false;
+    
     try {
       aiResponse = await axios.post(
         `${AI_SERVICE_URL}/predict`,
@@ -42,19 +44,28 @@ const recommendSpecialization = async (req, res) => {
     } catch (aiError) {
       console.error('AI Service Error:', aiError.message);
       
-      if (aiError.code === 'ECONNREFUSED') {
-        return res.status(503).json({
-          success: false,
-          message: 'AI service is currently unavailable. Please try again later.',
-          error: 'AI_SERVICE_UNAVAILABLE',
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to analyze symptoms. Please try again.',
-        error: 'AI_SERVICE_ERROR',
-      });
+      // Fallback: Use keyword-based matching when AI service unavailable
+      usedFallback = true;
+      const symptomLower = symptoms.toLowerCase();
+      let predictedSpec = 'General Medicine';
+      
+      if (symptomLower.match(/heart|chest pain|cardiac|blood pressure/i)) predictedSpec = 'Cardiology';
+      else if (symptomLower.match(/skin|rash|acne|eczema/i)) predictedSpec = 'Dermatology';
+      else if (symptomLower.match(/brain|headache|migraine|seizure|nerve/i)) predictedSpec = 'Neurology';
+      else if (symptomLower.match(/bone|joint|fracture|arthritis|spine/i)) predictedSpec = 'Orthopedics';
+      else if (symptomLower.match(/child|baby|infant|pediatric/i)) predictedSpec = 'Pediatrics';
+      else if (symptomLower.match(/stomach|digest|nausea|diarrhea|liver/i)) predictedSpec = 'Gastroenterology';
+      else if (symptomLower.match(/eye|vision|blind|cataract/i)) predictedSpec = 'Ophthalmology';
+      else if (symptomLower.match(/ear|nose|throat|hearing|sinus/i)) predictedSpec = 'ENT';
+      else if (symptomLower.match(/mental|depression|anxiety|stress|psychiatric/i)) predictedSpec = 'Psychiatry';
+      
+      aiResponse = {
+        data: {
+          specialization: predictedSpec,
+          confidence: 0.7,
+          top_predictions: [{ specialization: predictedSpec, confidence: 0.7 }],
+        }
+      };
     }
 
     // Extract AI prediction
@@ -118,6 +129,7 @@ const recommendSpecialization = async (req, res) => {
       topPredictions: top_predictions || [],
       doctors: doctorsWithSlots,
       doctorCount: doctorsWithSlots.length,
+      usedFallback, // Indicate if keyword matching was used
       message:
         doctorsWithSlots.length > 0
           ? `Found ${doctorsWithSlots.length} ${specialization} specialist(s)`

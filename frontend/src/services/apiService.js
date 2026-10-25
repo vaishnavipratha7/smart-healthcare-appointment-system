@@ -15,6 +15,10 @@ export const authService = {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data));
+      // Store refreshToken if provided (fallback when cookies blocked)
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+      }
     }
     return response.data;
   },
@@ -22,6 +26,7 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
   },
 
   verifyOtp: async ({ email, otp }) => {
@@ -29,6 +34,10 @@ export const authService = {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data));
+      // Store refreshToken if provided (fallback when cookies blocked)
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+      }
     }
     return response.data;
   },

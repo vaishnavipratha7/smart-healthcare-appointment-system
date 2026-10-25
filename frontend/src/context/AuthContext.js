@@ -19,8 +19,14 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Restore session on mount
     const storedUser = authService.getCurrentUser();
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+    
+    // Validate token exists and user data is complete
+    if (storedUser && storedToken && storedUser._id) {
       setUser(storedUser);
+    } else {
+      // Clear corrupted/incomplete session data
+      authService.logout();
     }
     setLoading(false);
   }, []);
