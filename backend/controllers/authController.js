@@ -201,6 +201,7 @@ const verifyOTP = async (req, res) => {
       role: user.role,
       doctorProfile,
       token: accessToken,
+      refreshToken: refreshToken, // fallback if cookie blocked
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -299,6 +300,7 @@ const login = async (req, res) => {
       role: user.role,
       doctorProfile: doctorProfile,
       token: accessToken,
+      refreshToken: refreshToken, // fallback if cookie blocked
       requiresVerification: false,
     });
   } catch (error) {
@@ -443,7 +445,8 @@ const updateProfile = async (req, res) => {
 // @route   POST /api/auth/refresh
 // @access  Public
 const refresh = async (req, res) => {
-  const refreshToken = req.cookies.refreshToken;
+  // Try cookie first, then body (fallback when cookies blocked)
+  const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
   if (!refreshToken) {
     return res.status(401).json({ success: false, message: 'Refresh token not found' });
