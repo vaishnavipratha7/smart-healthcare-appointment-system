@@ -63,19 +63,22 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   ...extraOrigins,
   'http://localhost:3000',
-  'https://smart-healthcare-appointment-system-52eb12fpz.vercel.app/'
-].filter(Boolean);
+  'https://smart-healthcare-appointment-system-ochre.vercel.app',
+]
+  .filter(Boolean)
+  .map((o) => o.replace(/\/+$/, '')); // strip trailing slashes so they always match
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) {
-      // Allow non-browser requests like server-side calls, curl, or Postman
+      // non-browser requests (Postman, curl, server to server)
       return callback(null, true);
     }
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    callback(new Error(`CORS policy does not allow access from origin ${origin}`));
+    console.warn('Blocked by CORS:', origin);
+    callback(null, false);
   },
   credentials: true,
 }));
